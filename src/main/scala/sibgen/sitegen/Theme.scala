@@ -192,6 +192,29 @@ object Theme:
       |  overflow-x: auto;          /* scroll if a source line exceeds pagewidth */
       |}
       |.snippet-detail[hidden] { display: none; }
+      |/* CodeMirror 6 mounts a `.cm-editor` div in place of the original <pre>;
+      | * strip its default chrome and make it inherit the same metrics our `pre` rules use. */
+      |.snippet-scala .cm-editor             { background: transparent; outline: none; }
+      |.snippet-scala .cm-editor.cm-focused  { outline: none; }
+      |.snippet-scala .cm-scroller {
+      |  /* Match the original `pre, code` rules — CM6 ate the <pre> so we have to set them here. */
+      |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
+      |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+      |  font-size: 0.92em;
+      |  line-height: 1.55;
+      |  padding: 0.7em 1em;
+      |}
+      |.snippet-scala .cm-content { padding: 0; }
+      |.snippet-scala .cm-line    { padding: 0; }
+      |.snippet-scala .cm-gutters { display: none; }
+      |.snippet-scala .cm-cursor  { border-left: 1px solid var(--fg); }
+      |.snippet-scala .cm-selectionBackground,
+      |.snippet-scala .cm-content ::selection { background: rgba(110, 132, 161, 0.20); }
+      |@media (prefers-color-scheme: dark) {
+      |  .snippet-scala .cm-selectionBackground,
+      |  .snippet-scala .cm-content ::selection { background: rgba(180, 200, 220, 0.20); }
+      |}
+      |
       |.snippet-diag         { padding: 0.2em 0; margin-bottom: 0.5em; }
       |.snippet-diag:last-child { margin-bottom: 0; }
       |.snippet-diag__label  { display: inline-block; margin-right: 0.4em; font-weight: 600; color: var(--fg-soft); }
@@ -222,7 +245,8 @@ object Theme:
       |.ansi-white,
       |.ansi-bright-white   { color: var(--fg-soft); }
       |
-      |/* Scala 3 syntax highlighting (see sibgen.sitegen.Highlighter). */
+      |/* Scala syntax highlighting — categories mirror dotty's compiler-diagnostic palette
+      | * (keyword / soft modifier / literal / type / definition / annotation / comment). */
       |.hl-kw      { color: #9d2c8f; }
       |.hl-soft    { color: #9d2c8f; font-style: italic; }
       |.hl-num     { color: #aa4500; }
@@ -230,6 +254,8 @@ object Theme:
       |.hl-op      { color: #555;     }
       |.hl-punct   { color: #888;     }
       |.hl-comment { color: var(--fg-fade); font-style: italic; }
+      |.hl-type    { color: #1e6e8f; }   /* type names + annotations */
+      |.hl-def     { color: #8c6500; }   /* val/def/class names being defined */
       |
       |@media (prefers-color-scheme: dark) {
       |  .hl-kw      { color: #d18df0; }
@@ -238,6 +264,8 @@ object Theme:
       |  .hl-str     { color: #7dd6a3; }
       |  .hl-op      { color: #aaa;    }
       |  .hl-punct   { color: #888;    }
+      |  .hl-type    { color: #5fb3d4; }
+      |  .hl-def     { color: #d4b656; }
       |}
       |
       |ul, ol {

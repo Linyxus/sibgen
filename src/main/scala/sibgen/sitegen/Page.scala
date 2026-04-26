@@ -4,12 +4,25 @@ package sibgen.sitegen
 object Page:
 
   /** Render a full HTML document with the given body and title. The CSS theme is inlined.
-    * If `mermaidJs` is non-empty, the bundle is inlined and an init script runs `mermaid.run`
-    * once `document.fonts.ready` resolves (so labels measure against the real bundled font).
+    *
+    * `mermaidJs` (when non-empty) inlines the mermaid bundle plus an init script that runs
+    * `mermaid.run` once `document.fonts.ready` resolves.
+    *
+    * `codemirrorJs` (when non-empty) inlines the CodeMirror 6 IIFE plus a one-line call to
+    * `window.SibgenSnippets.init()` so each Scala snippet swaps its static `<pre>` for a
+    * live CM6 editor before any user click can reach the type-check button.
     */
   def render(bodyHtml: String, title: String,
              css: String = Theme.default,
-             mermaidJs: String = ""): String =
+             mermaidJs: String = "",
+             codemirrorJs: String = ""): String =
+    val codemirrorBlock =
+      if codemirrorJs.nonEmpty then
+        s"""<script>
+           |$codemirrorJs</script>
+           |<script>window.SibgenSnippets && window.SibgenSnippets.init();</script>
+           |""".stripMargin
+      else ""
     val mermaidBlock =
       if mermaidJs.nonEmpty then
         s"""<script>
@@ -32,7 +45,7 @@ object Page:
        |$bodyHtml</main>
        |<script>
        |$snippetScript</script>
-       |${mermaidBlock}</body>
+       |${codemirrorBlock}${mermaidBlock}</body>
        |</html>
        |""".stripMargin
 
@@ -281,22 +294,30 @@ object Page:
       |    });
       |  }
       |
+      |  // Source-of-text resolution: CodeMirror's live buffer first, then the original
+      |  // pre/code (covers the brief pre-mount window and the case where the bundle
+      |  // failed to load — clicking still type-checks the original frozen text).
+      |  function readSnippetSource(snippet) {
+      |    if (snippet.cmView && snippet.cmView.state) return snippet.cmView.state.doc.toString();
+      |    var code = snippet.querySelector('pre code');
+      |    return code ? code.textContent : '';
+      |  }
+      |
       |  document.addEventListener('click', function (e) {
       |    var btn = e.target.closest && e.target.closest('.snippet-check');
       |    if (!btn || btn.disabled) return;
       |    var snippet = btn.closest('.snippet');
       |    if (!snippet) return;
       |    var strip  = snippet.querySelector('.snippet-strip');
-      |    var code   = snippet.querySelector('pre code');
       |    var status = snippet.querySelector('.snippet-status');
       |    var detail = snippet.querySelector('.snippet-detail');
-      |    if (!strip || !code || !status || !detail) return;
+      |    if (!strip || !status || !detail) return;
       |    btn.disabled = true;
       |    snippet.classList.remove('is-ok', 'is-error');
       |    detail.hidden = true;
       |    detail.innerHTML = '';
       |    status.textContent = '⋯ type-checking…';
-      |    runCheck(snippet, strip, status, detail, btn, code.textContent).then(function () {
+      |    runCheck(snippet, strip, status, detail, btn, readSnippetSource(snippet)).then(function () {
       |      btn.disabled = false;
       |    });
       |  });

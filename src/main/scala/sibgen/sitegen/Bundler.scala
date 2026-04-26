@@ -14,10 +14,17 @@ object Bundler:
   lazy val bundledCss: String = run()
 
   /** Vendored mermaid UMD bundle (~3 MB). Loaded once per JVM, only when first read. */
-  lazy val mermaidJs: String =
-    val resource = "/sibgen/js/mermaid.min.js"
+  lazy val mermaidJs: String = readJsResource("/sibgen/js/mermaid.min.js", "mermaid")
+
+  /** Vendored CodeMirror 6 IIFE bundle (~290 KB). Built by scripts/build-codemirror.sh
+    * from js-src/codemirror/entry.ts. Loaded once per JVM, only when first read.
+    */
+  lazy val codemirrorJs: String = readJsResource("/sibgen/js/codemirror.iife.js", "codemirror")
+
+  private def readJsResource(resource: String, label: String): String =
     val in = getClass.getResourceAsStream(resource)
-    if in == null then throw new RuntimeException(s"mermaid asset not found on classpath: $resource")
+    if in == null then
+      throw new RuntimeException(s"$label asset not found on classpath: $resource")
     try new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
     finally in.close()
 

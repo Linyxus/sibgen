@@ -56,18 +56,24 @@ object HtmlRenderer:
     case c: adt.FencedCodeBlock =>
       val lang    = c.info.trim.takeWhile(!_.isWhitespace)
       val isScala = lang == "scala" || lang == "scala3"
+      // commonmark-java preserves the newline immediately before the closing fence.
+      // Stripping one keeps the rendered <pre> (and the CodeMirror view that swaps in
+      // for it) from showing a phantom empty trailing line.
+      val literal = c.literal.stripSuffix("\n")
       if lang == "mermaid" then
         // Raw source goes straight into <pre class="mermaid"> — mermaid reads textContent.
         sb.append("<pre class=\"mermaid\">")
-        escText(c.literal, sb)
+        escText(literal, sb)
         sb.append("</pre>\n")
       else
         if isScala then sb.append("<div class=\"snippet snippet-scala\">\n")
         sb.append("<pre><code")
         if lang.nonEmpty then sb.append(" class=\"language-").append(escAttr(lang)).append('"')
         sb.append('>')
-        if isScala then sb.append(Highlighter.highlight(c.literal))
-        else            escText(c.literal, sb)
+        // Scala blocks render as plain text — CodeMirror 6 takes over on mount
+        // and applies the .hl-* classes against the editable buffer. See
+        // sibgen.sitegen.Page.snippetScript + js-src/codemirror/entry.ts.
+        escText(literal, sb)
         sb.append("</code></pre>\n")
         if isScala then
           sb.append("<div class=\"snippet-strip\">\n")

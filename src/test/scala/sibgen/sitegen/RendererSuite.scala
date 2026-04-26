@@ -96,3 +96,22 @@ class RendererSuite extends munit.FunSuite:
     assert(html.contains("measureColumns"), "expected dynamic column-measurement helper")
     assert(html.contains("clientWidth") || html.contains("offsetWidth"),
            "expected DOM width measurement in column computation")
+
+  test("renderPage inlines the CodeMirror bundle when the doc contains a Scala snippet"):
+    val src  = "# Doc\n\n```scala\nval x = 1\n```\n"
+    val html = Renderer.renderPage(Markdown.parse(src), "Doc")
+    assert(html.contains("<div class=\"snippet snippet-scala\">"), "expected scala snippet shell")
+    assert(html.contains("SibgenSnippets"),                        "expected codemirror bundle to be inlined")
+    assert(html.contains("window.SibgenSnippets && window.SibgenSnippets.init();"),
+           "expected the on-load init call to be present")
+
+  test("renderPage omits the CodeMirror bundle when the doc has no Scala snippet"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc\n\njust prose."), "Doc")
+    assert(!html.contains("SibgenSnippets"),
+           "did not expect codemirror bundle when no Scala snippet present")
+
+  test("snippet script reads the live editor before falling back to <pre><code>"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("readSnippetSource"),     "expected source-resolution helper")
+    assert(html.contains("snippet.cmView"),        "expected click handler to consult the CodeMirror view")
+    assert(html.contains("state.doc.toString()"),  "expected the editor's text extraction call")

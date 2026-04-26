@@ -14,9 +14,10 @@ object Renderer:
     * The vendored mermaid bundle is only inlined when the body actually contains a mermaid block.
     */
   def renderPage(doc: adt.Document, title: String): String =
-    val body      = renderHtmlBody(doc)
-    val mermaidJs = if body.contains("<pre class=\"mermaid\">") then Bundler.mermaidJs else ""
-    Page.render(body, title, Bundler.bundledCss, mermaidJs)
+    val body         = renderHtmlBody(doc)
+    val mermaidJs    = if body.contains("<pre class=\"mermaid\">")        then Bundler.mermaidJs    else ""
+    val codemirrorJs = if body.contains("<div class=\"snippet snippet-scala\">") then Bundler.codemirrorJs else ""
+    Page.render(body, title, Bundler.bundledCss, mermaidJs, codemirrorJs)
 
   /** Extract a plain-text title from the document's first H1, if any. */
   def titleOf(doc: adt.Document): Option[String] =

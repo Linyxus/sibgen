@@ -56,3 +56,13 @@ class BundlerSuite extends munit.FunSuite:
     val a = Bundler.mermaidJs
     val b = Bundler.mermaidJs
     assert(a eq b, "mermaidJs should be the same instance on repeat access (cached)")
+
+  test("codemirrorJs loads the vendored IIFE bundle and exposes window.SibgenSnippets"):
+    val js = Bundler.codemirrorJs
+    assert(js.length > 50_000,            s"expected codemirror bundle to be > 50KB, got ${js.length} chars")
+    assert(js.contains("SibgenSnippets"), "expected the bundle to expose window.SibgenSnippets")
+
+  test("codemirrorJs is cached across calls"):
+    val a = Bundler.codemirrorJs
+    val b = Bundler.codemirrorJs
+    assert(a eq b, "codemirrorJs should be the same instance on repeat access (cached)")

@@ -43,11 +43,12 @@ class HtmlRendererSuite extends munit.FunSuite:
     val out = html("---\n")
     assert(out.contains("<hr />"))
 
-  test("fenced scala block carries language class and is syntax-highlighted"):
+  test("fenced scala block carries language class and emits plain text (CodeMirror highlights at runtime)"):
     val out = html("```scala\nval x = 1\n```\n")
     assert(out.contains("<pre><code class=\"language-scala\">"), out)
-    assert(out.contains("<span class=\"hl-kw\">val</span>"), out)
-    assert(out.contains("<span class=\"hl-num\">1</span>"), out)
+    // No more build-time `.hl-*` spans on the Scala path — CM6 takes over on mount.
+    assert(out.contains("val x = 1"), out)
+    assert(!out.contains("<span class=\"hl-"), out)
     assert(out.contains("</code></pre>"), out)
 
   test("fenced non-scala block stays plain (no spans)"):
