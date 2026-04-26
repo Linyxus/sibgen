@@ -46,12 +46,18 @@ object Page:
       |  var compiler = null;            // window.DottyCompiler once loaded
       |  var loading  = null;            // Promise<DottyCompiler> while in flight, null otherwise
       |
-      |  function setAllButtons(label, disabled) {
+      |  // Loading state lives in the status field (left, wide), not the button label —
+      |  // keeps the button slim so its absolute box never grows the strip vertically.
+      |  function setAllButtonsHidden(hidden) {
       |    var btns = document.querySelectorAll('.snippet-check');
       |    for (var i = 0; i < btns.length; i++) {
-      |      btns[i].textContent = label;
-      |      btns[i].disabled = disabled;
+      |      btns[i].hidden = hidden;
+      |      btns[i].disabled = hidden;
       |    }
+      |  }
+      |  function setAllStatuses(text) {
+      |    var ss = document.querySelectorAll('.snippet-status');
+      |    for (var i = 0; i < ss.length; i++) ss[i].textContent = text;
       |  }
       |
       |  function fetchWithProgress(url, onProgress) {
@@ -105,33 +111,36 @@ object Page:
       |    var pCp   = { loaded: 0, total: null };
       |    function update() {
       |      var loaded = pMain.loaded + pCp.loaded;
-      |      var label;
+      |      var msg;
       |      if (pMain.total != null && pCp.total != null) {
       |        var pct = Math.floor(100 * loaded / (pMain.total + pCp.total));
-      |        label = 'downloading the compiler · ' + pct + '%';
+      |        msg = 'downloading the compiler · ' + pct + '%';
       |      } else {
-      |        label = 'downloading the compiler · ' + Math.floor(loaded / 1024 / 1024) + ' MB';
+      |        msg = 'downloading the compiler · ' + Math.floor(loaded / 1024 / 1024) + ' MB';
       |      }
-      |      setAllButtons(label, true);
+      |      setAllStatuses(msg);
       |    }
       |
-      |    setAllButtons('downloading the compiler · 0%', true);
+      |    setAllButtonsHidden(true);
+      |    setAllStatuses('downloading the compiler · 0%');
       |
       |    loading = Promise.all([
       |      fetchWithProgress('/assets/main.js',       function (e) { pMain = e; update(); }),
       |      fetchWithProgress('/assets/classpath.bin', function (e) { pCp   = e; update(); })
       |    ]).then(function (bufs) {
-      |      setAllButtons('initializing the compiler…', true);
+      |      setAllStatuses('initializing the compiler…');
       |      return installCompilerScript(bufs[0]).then(function () {
       |        window.DottyCompiler.loadClasspath(bufs[1]);
       |        compiler = window.DottyCompiler;
       |        loading  = null;
-      |        setAllButtons('» type-check', false);
+      |        setAllStatuses('');
+      |        setAllButtonsHidden(false);
       |        return compiler;
       |      });
       |    }, function (err) {
       |      loading = null;
-      |      setAllButtons('» type-check', false);
+      |      setAllStatuses('⚠ ' + (err && err.message ? err.message : String(err)));
+      |      setAllButtonsHidden(false);
       |      throw err;
       |    });
       |
@@ -183,71 +192,92 @@ object Page:
       |    return out;
       |  }
       |
+      |  // Returns { summary, detail, kind }: summary is the short toolbar line,
+      |  // detail is the full-width diagnostic body (HTML, may be empty).
       |  function formatDiagnostics(diags) {
-      |    if (!diags || diags.length === 0) return { html: '✓ no errors', kind: 'is-ok' };
+      |    if (!diags || diags.length === 0) return { summary: '✓ no errors', detail: '', kind: 'is-ok' };
+      |    if (window.console && window.console.log) console.log('[type-check] diagnostics:', diags);
       |    var errors = 0, warns = 0;
       |    for (var i = 0; i < diags.length; i++) {
       |      if (diags[i].severity === 'error')        errors++;
       |      else if (diags[i].severity === 'warning') warns++;
       |    }
-      |    var head, kind = 'is-ok';
+      |    var summary, kind = 'is-ok';
       |    if (errors > 0) {
-      |      head = '⚠ ' + errors + (errors === 1 ? ' error' : ' errors');
-      |      if (warns > 0) head += ', ' + warns + (warns === 1 ? ' warning' : ' warnings');
+      |      summary = '⚠ ' + errors + (errors === 1 ? ' error' : ' errors');
+      |      if (warns > 0) summary += ', ' + warns + (warns === 1 ? ' warning' : ' warnings');
       |      kind = 'is-error';
       |    } else if (warns > 0) {
-      |      head = '▲ ' + warns + (warns === 1 ? ' warning' : ' warnings');
+      |      summary = '▲ ' + warns + (warns === 1 ? ' warning' : ' warnings');
       |    } else {
-      |      head = '◌ ' + diags.length + (diags.length === 1 ? ' note' : ' notes');
+      |      summary = '◌ ' + diags.length + (diags.length === 1 ? ' note' : ' notes');
       |    }
-      |    var details = diags.map(function (d) {
-      |      var pos = (d.line >= 0 && d.column >= 0) ? d.line + ':' + d.column + ' ' : '';
-      |      return escapeHtml(pos) + ansiToHtml(d.message);
-      |    }).join('\n\n');
-      |    return { html: escapeHtml(head) + '\n\n' + details, kind: kind };
+      |    // Each diagnostic gets its own labeled block so warnings stay visible even
+      |    // if their messageAndPos rendering is short or visually similar to a neighbor.
+      |    var detail = diags.map(function (d) {
+      |      var sev = d.severity || 'info';
+      |      var pos = (d.line >= 0 && d.column >= 0) ? ' ' + d.line + ':' + d.column : '';
+      |      var label = '[' + sev + pos + ']';
+      |      var body = (d.message && d.message.replace(/\s+/g, '')) ? ansiToHtml(d.message) : '<span class="ansi-bright-white">(no message)</span>';
+      |      return '<div class="snippet-diag" data-severity="' + sev + '">' +
+      |             '<span class="snippet-diag__label">' + escapeHtml(label) + '</span>\n' +
+      |             body +
+      |             '</div>';
+      |    }).join('');
+      |    return { summary: escapeHtml(summary), detail: detail, kind: kind };
       |  }
       |
-      |  function applyResult(snippet, status, btn, kind, html) {
+      |  function applyResult(snippet, status, detail, btn, kind, summaryHtml, detailHtml) {
       |    snippet.classList.add(kind);
-      |    status.innerHTML = html;
+      |    status.innerHTML = summaryHtml;
+      |    if (detailHtml) {
+      |      detail.innerHTML = detailHtml;
+      |      detail.hidden = false;
+      |    } else {
+      |      detail.innerHTML = '';
+      |      detail.hidden = true;
+      |    }
       |    btn.textContent = '» check again';
       |  }
       |
-      |  // Measure the status's available width in monospace columns so the compiler's
-      |  // -pagewidth matches the rendered container exactly. Probe is appended into the
-      |  // status element so it inherits the same font / size / variant settings.
-      |  function measureColumns(statusEl) {
+      |  // Measure the strip's available text width in monospace columns so the compiler's
+      |  // -pagewidth matches the rendered container exactly. Probe lives inside the strip so
+      |  // it inherits font / size / feature settings; we subtract the strip's own padding.
+      |  function measureColumns(stripEl) {
       |    var probe = document.createElement('span');
       |    probe.style.position   = 'absolute';
       |    probe.style.visibility = 'hidden';
       |    probe.style.whiteSpace = 'pre';
       |    probe.textContent = 'M'.repeat ? 'M'.repeat(100) : new Array(101).join('M');
-      |    statusEl.appendChild(probe);
-      |    var charW      = probe.offsetWidth / 100;
-      |    var availableW = statusEl.clientWidth;
-      |    statusEl.removeChild(probe);
-      |    if (!charW || !availableW) return 80;     // sane fallback if hidden / not laid out
-      |    return Math.max(20, Math.floor(availableW / charW) - 1);  // -1 for round-off safety
+      |    stripEl.appendChild(probe);
+      |    var charW = probe.offsetWidth / 100;
+      |    stripEl.removeChild(probe);
+      |    var s    = getComputedStyle(stripEl);
+      |    var padL = parseFloat(s.paddingLeft)  || 0;
+      |    var padR = parseFloat(s.paddingRight) || 0;
+      |    var availableW = stripEl.clientWidth - padL - padR;
+      |    if (!charW || availableW <= 0) return 80;
+      |    return Math.max(20, Math.floor(availableW / charW) - 1);
       |  }
       |
-      |  function runCheck(snippet, status, btn, source) {
+      |  function runCheck(snippet, strip, status, detail, btn, source) {
       |    return ensureCompiler().then(function (c) {
       |      // Yield once so '⋯ type-checking…' paints before compile() blocks the main thread.
       |      return new Promise(function (resolve) {
       |        setTimeout(function () {
       |          try {
-      |            var args = ['-pagewidth', String(measureColumns(status))];
+      |            var args = ['-pagewidth', String(measureColumns(strip))];
       |            var diags = c.compile(source, args);
       |            var r = formatDiagnostics(diags);
-      |            applyResult(snippet, status, btn, r.kind, r.html);
+      |            applyResult(snippet, status, detail, btn, r.kind, r.summary, r.detail);
       |          } catch (e) {
-      |            applyResult(snippet, status, btn, 'is-error', '⚠ ' + escapeHtml(e && e.message ? e.message : String(e)));
+      |            applyResult(snippet, status, detail, btn, 'is-error', '⚠ ' + escapeHtml(e && e.message ? e.message : String(e)), '');
       |          }
       |          resolve();
       |        }, 0);
       |      });
       |    }, function (err) {
-      |      applyResult(snippet, status, btn, 'is-error', '⚠ ' + escapeHtml(err && err.message ? err.message : String(err)));
+      |      applyResult(snippet, status, detail, btn, 'is-error', '⚠ ' + escapeHtml(err && err.message ? err.message : String(err)), '');
       |    });
       |  }
       |
@@ -256,13 +286,17 @@ object Page:
       |    if (!btn || btn.disabled) return;
       |    var snippet = btn.closest('.snippet');
       |    if (!snippet) return;
+      |    var strip  = snippet.querySelector('.snippet-strip');
       |    var code   = snippet.querySelector('pre code');
       |    var status = snippet.querySelector('.snippet-status');
-      |    if (!code || !status) return;
+      |    var detail = snippet.querySelector('.snippet-detail');
+      |    if (!strip || !code || !status || !detail) return;
       |    btn.disabled = true;
       |    snippet.classList.remove('is-ok', 'is-error');
+      |    detail.hidden = true;
+      |    detail.innerHTML = '';
       |    status.textContent = '⋯ type-checking…';
-      |    runCheck(snippet, status, btn, code.textContent).then(function () {
+      |    runCheck(snippet, strip, status, detail, btn, code.textContent).then(function () {
       |      btn.disabled = false;
       |    });
       |  });

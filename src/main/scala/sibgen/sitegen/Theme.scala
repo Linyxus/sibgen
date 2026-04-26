@@ -151,9 +151,11 @@ object Theme:
       |  background: transparent;
       |}
       |.snippet-strip {
-      |  display: flex;
+      |  display: grid;
+      |  grid-template-columns: 1fr auto;
       |  align-items: baseline;
-      |  gap: 1em;
+      |  column-gap: 1em;
+      |  row-gap: 0.4em;
       |  padding: 0.45em 1em;
       |  border-top: 1px solid var(--code-border);
       |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
@@ -163,12 +165,14 @@ object Theme:
       |  transition: border-top-color 0.15s ease;
       |}
       |.snippet-status {
-      |  flex: 1;
-      |  white-space: pre-wrap;
+      |  grid-column: 1;
       |  min-width: 0;
+      |  white-space: pre;
+      |  overflow: hidden;
+      |  text-overflow: ellipsis;
       |}
       |.snippet-check {
-      |  flex: none;
+      |  grid-column: 2;
       |  background: none;
       |  border: none;
       |  padding: 0;
@@ -182,6 +186,18 @@ object Theme:
       |.snippet-check:focus { opacity: 1; }
       |.snippet-check:hover { color: var(--fg); }
       |.snippet-check[disabled] { cursor: progress; opacity: 0.7; }
+      |.snippet-detail {
+      |  grid-column: 1 / -1;       /* span both columns */
+      |  white-space: pre;          /* preserve compiler newlines, no auto-wrap */
+      |  overflow-x: auto;          /* scroll if a source line exceeds pagewidth */
+      |}
+      |.snippet-detail[hidden] { display: none; }
+      |.snippet-diag         { padding: 0.2em 0; margin-bottom: 0.5em; }
+      |.snippet-diag:last-child { margin-bottom: 0; }
+      |.snippet-diag__label  { display: inline-block; margin-right: 0.4em; font-weight: 600; color: var(--fg-soft); }
+      |.snippet-diag[data-severity="error"]   .snippet-diag__label { color: #c4452d; }
+      |.snippet-diag[data-severity="warning"] .snippet-diag__label { color: #aa4500; }
+      |.snippet-diag[data-severity="info"]    .snippet-diag__label { color: var(--accent); }
       |
       |.snippet.is-ok    .snippet-strip  { border-top-color: #117a3d; }
       |.snippet.is-ok    .snippet-status { color: var(--fg); }

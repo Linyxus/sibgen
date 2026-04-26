@@ -63,19 +63,22 @@ class HtmlRendererSuite extends munit.FunSuite:
     assert(out.contains("class=\"snippet-check\""), out)
     assert(out.contains("data-action=\"typecheck\""), out)
     assert(out.contains("» type-check</button>"), out)
-    // Order: code first, then strip (status before button inside it).
+    assert(out.contains("<div class=\"snippet-detail\" hidden></div>"), out)
+    // Order: code first, then strip (status, button, detail inside it).
     val iPre    = out.indexOf("<pre>")
     val iStrip  = out.indexOf("snippet-strip")
     val iStatus = out.indexOf("snippet-status")
     val iBtn    = out.indexOf("snippet-check")
+    val iDetail = out.indexOf("snippet-detail")
     assert(iPre < iStrip, out)
-    assert(iStrip < iStatus && iStatus < iBtn, out)
+    assert(iStrip < iStatus && iStatus < iBtn && iBtn < iDetail, out)
 
   test("non-scala fenced block has no snippet shell"):
     val out = html("```bash\necho hi\n```\n")
     assert(!out.contains("snippet-check"), out)
     assert(!out.contains("snippet-strip"), out)
     assert(!out.contains("snippet-status"), out)
+    assert(!out.contains("snippet-detail"), out)
 
   test("mermaid fenced block emits raw <pre class=\"mermaid\"> with no <code> wrapper"):
     val out = html("```mermaid\ngraph TD\n  A --> B\n```\n")

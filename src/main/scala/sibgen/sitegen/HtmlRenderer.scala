@@ -73,6 +73,7 @@ object HtmlRenderer:
           sb.append("<div class=\"snippet-strip\">\n")
           sb.append("<span class=\"snippet-status\" aria-live=\"polite\"></span>\n")
           sb.append("<button type=\"button\" class=\"snippet-check\" data-action=\"typecheck\">» type-check</button>\n")
+          sb.append("<div class=\"snippet-detail\" hidden></div>\n")
           sb.append("</div>\n")
           sb.append("</div>\n")
 
