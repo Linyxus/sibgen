@@ -1,23 +1,19 @@
 package sibgen.sitegen
 
 import sibgen.md.adt
-import sibgen.md.commonmark.{Extensions, ToJava}
-
-import org.commonmark.renderer.html.HtmlRenderer
 
 /** Renders a parsed markdown ADT into HTML. */
 object Renderer:
 
-  private val htmlRenderer: HtmlRenderer =
-    HtmlRenderer.builder().extensions(Extensions.all).build()
-
   /** Render the body HTML for a parsed document (no `<html>`/`<head>` wrapper). */
   def renderHtmlBody(doc: adt.Document): String =
-    htmlRenderer.render(ToJava.toDocument(doc))
+    HtmlRenderer.render(doc)
 
-  /** Render a complete, self-contained HTML page with the default theme inlined. */
+  /** Render a complete, self-contained HTML page. CSS is bundled by esbuild on first call
+    * (font woff2 inlined as a data URL) and cached for the rest of the process.
+    */
   def renderPage(doc: adt.Document, title: String): String =
-    Page.render(renderHtmlBody(doc), title)
+    Page.render(renderHtmlBody(doc), title, Bundler.bundledCss)
 
   /** Extract a plain-text title from the document's first H1, if any. */
   def titleOf(doc: adt.Document): Option[String] =

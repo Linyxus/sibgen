@@ -17,7 +17,7 @@ object Theme:
       |  --code-bg:      #fbfbfd;
       |  --code-border:  #d6dfeb;
       |  --quote-rule:   #cccccc;
-      |  --font-serif:   'New York', 'Iowan Old Style', 'Charter', Cambria, Georgia, serif;
+      |  --font-serif:   'Source Serif 4', 'New York', 'Iowan Old Style', 'Charter', Cambria, Georgia, serif;
       |}
       |
       |@media (prefers-color-scheme: dark) {
@@ -59,7 +59,7 @@ object Theme:
       |h1, h2, h3, h4, h5, h6 {
       |  color: var(--fg);
       |  font-family: var(--font-serif);
-      |  font-weight: 700;
+      |  font-weight: 400;
       |  line-height: 1.2;
       |  margin: 2.4em 0 0.6em;
       |  letter-spacing: -0.012em;

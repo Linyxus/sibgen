@@ -1,0 +1,126 @@
+package sibgen.sitegen
+
+import sibgen.md.Markdown
+
+class HtmlRendererSuite extends munit.FunSuite:
+
+  private def html(md: String): String = HtmlRenderer.render(Markdown.parse(md))
+
+  test("heading and paragraph"):
+    val out = html("# Hello\n\nWorld.")
+    assertEquals(out, "<h1>Hello</h1>\n<p>World.</p>\n")
+
+  test("emphasis, strong, code, soft-break"):
+    val out = html("*em* and **st** and `code`\nnext line")
+    assert(out.contains("<em>em</em>"))
+    assert(out.contains("<strong>st</strong>"))
+    assert(out.contains("<code>code</code>"))
+    assert(out.contains("\nnext line"))
+
+  test("escapes &, <, > in text"):
+    val out = html("a & b < c > d")
+    assert(out.contains("a &amp; b &lt; c &gt; d"))
+
+  test("escapes & < > in code"):
+    val out = html("`<a&b>`")
+    assert(out.contains("<code>&lt;a&amp;b&gt;</code>"))
+
+  test("link with title and attribute escaping"):
+    val out = html("""[t](https://x.com/?a=1&b=2 "ti\"tle")""")
+    assert(out.contains("<a href=\"https://x.com/?a=1&amp;b=2\" title=\"ti&quot;tle\">t</a>"))
+
+  test("image with alt text"):
+    val out = html("![alt *text*](img.png \"title\")")
+    assert(out.contains("<img src=\"img.png\" alt=\"alt text\" title=\"title\" />"))
+
+  test("blockquote wraps blocks"):
+    val out = html("> hi")
+    assert(out.contains("<blockquote>"))
+    assert(out.contains("<p>hi</p>"))
+    assert(out.contains("</blockquote>"))
+
+  test("thematic break"):
+    val out = html("---\n")
+    assert(out.contains("<hr />"))
+
+  test("fenced code block carries language class"):
+    val out = html("```scala\nval x = 1\n```\n")
+    assert(out.contains("<pre><code class=\"language-scala\">val x = 1\n</code></pre>"))
+
+  test("indented code block has no class"):
+    val out = html("    val x = 1\n")
+    assert(out.contains("<pre><code>val x = 1"))
+
+  test("HTML block passes through verbatim"):
+    val out = html("<div class=\"foo\">raw</div>\n")
+    assert(out.contains("<div class=\"foo\">raw</div>"))
+
+  test("HTML inline passes through"):
+    val out = html("hello <span>x</span> world")
+    assert(out.contains("<span>x</span>"))
+
+  test("bullet list with task markers"):
+    val out = html("- [x] done\n- [ ] todo\n- plain\n")
+    assert(out.contains("<ul>"))
+    assert(out.contains("<input type=\"checkbox\" disabled checked />"))
+    assert(out.contains("<input type=\"checkbox\" disabled />"))
+    val plain = out.split("\n").find(_.contains("plain")).get
+    assert(!plain.contains("checkbox"))
+
+  test("ordered list start attr"):
+    val out1 = html("1. one\n2. two\n")
+    assert(!out1.contains("start="))
+    val out3 = html("3. three\n4. four\n")
+    assert(out3.contains("<ol start=\"3\">"))
+
+  test("strikethrough"):
+    val out = html("~~old~~")
+    assert(out.contains("<del>old</del>"))
+
+  test("hard line break"):
+    val out = html("foo  \nbar")
+    assert(out.contains("<br />"))
+
+  test("table with align attributes"):
+    val out = html(
+      """| a | b | c |
+        ||:--|:-:|--:|
+        || 1 | 2 | 3 |
+        |""".stripMargin
+    )
+    assert(out.contains("<table>"))
+    assert(out.contains("<th align=\"left\">a</th>"))
+    assert(out.contains("<th align=\"center\">b</th>"))
+    assert(out.contains("<th align=\"right\">c</th>"))
+    assert(out.contains("<td align=\"left\">1</td>"))
+    assert(out.contains("<td align=\"right\">3</td>"))
+
+  test("footnote reference and section"):
+    val out = html("text[^1]\n\n[^1]: the note\n")
+    assert(out.contains("<sup class=\"footnote-ref\"><a href=\"#fn-1\" id=\"fnref-1\">1</a></sup>"))
+    assert(out.contains("<section class=\"footnotes\" data-footnotes>"))
+    assert(out.contains("<li id=\"fn-1\">"))
+    assert(out.contains("the note"))
+    assert(out.contains("class=\"footnote-backref\""))
+    assert(out.contains("↩"))
+
+  test("two footnotes get sequential indices in reference order"):
+    val out = html(
+      """a[^second] b[^first]
+        |
+        |[^first]:  one
+        |[^second]: two
+        |""".stripMargin
+    )
+    assert(out.contains("<a href=\"#fn-second\" id=\"fnref-second\">1</a>"))
+    assert(out.contains("<a href=\"#fn-first\" id=\"fnref-first\">2</a>"))
+
+  test("link reference definitions are not in the output (hoisted)"):
+    val out = html(
+      """[link][label]
+        |
+        |[label]: http://example.com
+        |""".stripMargin
+    )
+    assert(out.contains("<a href=\"http://example.com\">link</a>"))
+    assert(!out.contains("[label]:"))
