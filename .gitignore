@@ -31,5 +31,6 @@ metals.sbt
 .idea_modules
 /.worksheet/
 
-# Generated example output
+# Local sample / generated output
+example.md
 example.html
