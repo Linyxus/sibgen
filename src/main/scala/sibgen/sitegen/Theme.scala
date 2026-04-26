@@ -8,26 +8,28 @@ object Theme:
     */
   val default: String =
     """:root {
-      |  --bg:         #ffffff;
-      |  --fg:         #2b2b2b;
-      |  --fg-soft:    #6c6c6c;
-      |  --fg-fade:    #a0a098;
-      |  --accent:     #0e84b5;
-      |  --rule:       #e6e6e6;
-      |  --code-bg:    #f3f3f3;
-      |  --quote-rule: #cccccc;
+      |  --bg:           #ffffff;
+      |  --fg:           #2b2b2b;
+      |  --fg-soft:      #6c6c6c;
+      |  --fg-fade:      #a0a098;
+      |  --accent:       #0e84b5;
+      |  --rule:         #e6e6e6;
+      |  --code-bg:      #fbfbfd;
+      |  --code-border:  #d6dfeb;
+      |  --quote-rule:   #cccccc;
       |}
       |
       |@media (prefers-color-scheme: dark) {
       |  :root {
-      |    --bg:         #1d1f21;
-      |    --fg:         #d8d8d4;
-      |    --fg-soft:    #9a9a96;
-      |    --fg-fade:    #6c6c68;
-      |    --accent:     #58c4ff;
-      |    --rule:       #2c2e30;
-      |    --code-bg:    #2a2c2e;
-      |    --quote-rule: #3a3c3e;
+      |    --bg:           #1d1f21;
+      |    --fg:           #d8d8d4;
+      |    --fg-soft:      #9a9a96;
+      |    --fg-fade:      #6c6c68;
+      |    --accent:       #58c4ff;
+      |    --rule:         #2c2e30;
+      |    --code-bg:      #22252a;
+      |    --code-border:  #38465a;
+      |    --quote-rule:   #3a3c3e;
       |  }
       |}
       |
@@ -101,19 +103,22 @@ object Theme:
       |}
       |code {
       |  background: var(--code-bg);
-      |  padding: 0.1em 0.35em;
-      |  border-radius: 3px;
+      |  padding: 0.12em 0.4em;
+      |  border-radius: 0;
       |}
       |pre {
       |  background: var(--code-bg);
-      |  padding: 1em 1.1em;
-      |  border-radius: 4px;
+      |  border: 1px solid var(--code-border);
+      |  border-radius: 0;
+      |  padding: 0.7em 1em;
+      |  margin: 1.5em 0;
       |  overflow-x: auto;
-      |  line-height: 1.5;
+      |  line-height: 1.55;
       |}
       |pre code {
       |  background: transparent;
       |  padding: 0;
+      |  border: 0;
       |  border-radius: 0;
       |}
       |
