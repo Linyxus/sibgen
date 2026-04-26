@@ -79,7 +79,7 @@ object Theme:
       |}
       |a:hover { opacity: 0.6; }
       |
-      |strong { font-weight: 550; }
+      |strong { font-weight: 620; }
       |em     { font-style: italic; }
       |del    { color: var(--fg-soft); }
       |
@@ -241,7 +241,7 @@ object Theme:
       |  border-bottom: 1px solid var(--rule);
       |}
       |th {
-      |  font-weight: 550;
+      |  font-weight: 620;
       |  border-bottom: 2px solid var(--rule);
       |}
       |td[align="center"], th[align="center"] { text-align: center; }
