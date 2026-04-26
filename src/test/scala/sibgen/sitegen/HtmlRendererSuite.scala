@@ -55,23 +55,36 @@ class HtmlRendererSuite extends munit.FunSuite:
     assert(out.contains("<pre><code class=\"language-bash\">echo hi"), out)
     assert(!out.contains("<span class=\"hl-"), out)
 
-  test("scala snippet is wrapped in a snippet shell with a type-check button"):
+  test("scala snippet is wrapped in a snippet shell with a metadata strip"):
     val out = html("```scala\nval x = 1\n```\n")
     assert(out.contains("<div class=\"snippet snippet-scala\">"), out)
+    assert(out.contains("<div class=\"snippet-strip\">"), out)
+    assert(out.contains("class=\"snippet-status\""), out)
     assert(out.contains("class=\"snippet-check\""), out)
     assert(out.contains("data-action=\"typecheck\""), out)
-    assert(out.contains(">type-check</button>"), out)
-    assert(out.contains("<div class=\"snippet-result\" hidden></div>"), out)
-    // Shell wraps the existing <pre><code> — order: button, then code, then result.
-    val iBtn = out.indexOf("snippet-check")
-    val iPre = out.indexOf("<pre>")
-    val iRes = out.indexOf("snippet-result")
-    assert(iBtn < iPre && iPre < iRes, out)
+    assert(out.contains("» type-check</button>"), out)
+    // Order: code first, then strip (status before button inside it).
+    val iPre    = out.indexOf("<pre>")
+    val iStrip  = out.indexOf("snippet-strip")
+    val iStatus = out.indexOf("snippet-status")
+    val iBtn    = out.indexOf("snippet-check")
+    assert(iPre < iStrip, out)
+    assert(iStrip < iStatus && iStatus < iBtn, out)
 
   test("non-scala fenced block has no snippet shell"):
     val out = html("```bash\necho hi\n```\n")
     assert(!out.contains("snippet-check"), out)
-    assert(!out.contains("snippet-result"), out)
+    assert(!out.contains("snippet-strip"), out)
+    assert(!out.contains("snippet-status"), out)
+
+  test("mermaid fenced block emits raw <pre class=\"mermaid\"> with no <code> wrapper"):
+    val out = html("```mermaid\ngraph TD\n  A --> B\n```\n")
+    assert(out.contains("<pre class=\"mermaid\">"), out)
+    assert(out.contains("graph TD\n  A --&gt; B"), out)  // text-escaped, no syntax highlighting
+    assert(!out.contains("<code"), out)
+    assert(!out.contains("snippet"), out)
+    assert(!out.contains("language-mermaid"), out)
+    assert(!out.contains("hl-"), out)
 
   test("indented code block has no class"):
     val out = html("    val x = 1\n")

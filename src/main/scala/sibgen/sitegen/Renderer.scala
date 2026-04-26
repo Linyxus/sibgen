@@ -11,9 +11,12 @@ object Renderer:
 
   /** Render a complete, self-contained HTML page. CSS is bundled by esbuild on first call
     * (font woff2 inlined as a data URL) and cached for the rest of the process.
+    * The vendored mermaid bundle is only inlined when the body actually contains a mermaid block.
     */
   def renderPage(doc: adt.Document, title: String): String =
-    Page.render(renderHtmlBody(doc), title, Bundler.bundledCss)
+    val body      = renderHtmlBody(doc)
+    val mermaidJs = if body.contains("<pre class=\"mermaid\">") then Bundler.mermaidJs else ""
+    Page.render(body, title, Bundler.bundledCss, mermaidJs)
 
   /** Extract a plain-text title from the document's first H1, if any. */
   def titleOf(doc: adt.Document): Option[String] =

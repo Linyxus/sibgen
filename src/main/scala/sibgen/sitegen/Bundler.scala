@@ -13,6 +13,14 @@ object Bundler:
   /** Bundled CSS: theme rules + `@font-face` declarations with each font inlined as a data URL. */
   lazy val bundledCss: String = run()
 
+  /** Vendored mermaid UMD bundle (~3 MB). Loaded once per JVM, only when first read. */
+  lazy val mermaidJs: String =
+    val resource = "/sibgen/js/mermaid.min.js"
+    val in = getClass.getResourceAsStream(resource)
+    if in == null then throw new RuntimeException(s"mermaid asset not found on classpath: $resource")
+    try new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8)
+    finally in.close()
+
   /** A font to package: where to read it from on the classpath, and the `@font-face` rule
     * that should reference it. The file is copied into the bundle under `fonts/<fileName>`.
     */

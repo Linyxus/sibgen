@@ -54,20 +54,27 @@ object HtmlRenderer:
       sb.append("</code></pre>\n")
 
     case c: adt.FencedCodeBlock =>
-      val lang     = c.info.trim.takeWhile(!_.isWhitespace)
-      val isScala  = lang == "scala" || lang == "scala3"
-      if isScala then
-        sb.append("<div class=\"snippet snippet-scala\">\n")
-        sb.append("<button type=\"button\" class=\"snippet-check\" data-action=\"typecheck\">type-check</button>\n")
-      sb.append("<pre><code")
-      if lang.nonEmpty then sb.append(" class=\"language-").append(escAttr(lang)).append('"')
-      sb.append('>')
-      if isScala then sb.append(Highlighter.highlight(c.literal))
-      else            escText(c.literal, sb)
-      sb.append("</code></pre>\n")
-      if isScala then
-        sb.append("<div class=\"snippet-result\" hidden></div>\n")
-        sb.append("</div>\n")
+      val lang    = c.info.trim.takeWhile(!_.isWhitespace)
+      val isScala = lang == "scala" || lang == "scala3"
+      if lang == "mermaid" then
+        // Raw source goes straight into <pre class="mermaid"> — mermaid reads textContent.
+        sb.append("<pre class=\"mermaid\">")
+        escText(c.literal, sb)
+        sb.append("</pre>\n")
+      else
+        if isScala then sb.append("<div class=\"snippet snippet-scala\">\n")
+        sb.append("<pre><code")
+        if lang.nonEmpty then sb.append(" class=\"language-").append(escAttr(lang)).append('"')
+        sb.append('>')
+        if isScala then sb.append(Highlighter.highlight(c.literal))
+        else            escText(c.literal, sb)
+        sb.append("</code></pre>\n")
+        if isScala then
+          sb.append("<div class=\"snippet-strip\">\n")
+          sb.append("<span class=\"snippet-status\" aria-live=\"polite\"></span>\n")
+          sb.append("<button type=\"button\" class=\"snippet-check\" data-action=\"typecheck\">» type-check</button>\n")
+          sb.append("</div>\n")
+          sb.append("</div>\n")
 
     case h: adt.HtmlBlock =>
       sb.append(h.literal)

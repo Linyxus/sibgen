@@ -48,3 +48,18 @@ class RendererSuite extends munit.FunSuite:
   test("Page.render escapes the title"):
     val out = Page.render("<p>x</p>", "<script>alert(1)</script>")
     assert(out.contains("<title>&lt;script&gt;alert(1)&lt;/script&gt;</title>"))
+
+  test("renderPage inlines mermaid + init script when the doc contains a mermaid block"):
+    val src  = "# Doc\n\n```mermaid\ngraph TD\n  A --> B\n```\n"
+    val html = Renderer.renderPage(Markdown.parse(src), "Doc")
+    assert(html.contains("<pre class=\"mermaid\">"),       "expected mermaid pre in body")
+    assert(html.contains("mermaid.initialize"),            "expected mermaid init script in page")
+    assert(html.contains("themeVariables"),                "expected theme variables in init script")
+    assert(html.contains("document.fonts"),                "expected fonts.ready gating in init script")
+    assert(html.length > 3_000_000,                        s"expected page > 3MB with mermaid bundle, got ${html.length}")
+
+  test("renderPage omits mermaid bundle when the doc has no mermaid block"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc\n\nplain text."), "Doc")
+    assert(!html.contains("mermaid.initialize"), "did not expect mermaid init script when no mermaid block present")
+    assert(!html.contains("pre.mermaid") || !html.contains("mermaid.run"),
+           "did not expect mermaid runtime when no mermaid block present")

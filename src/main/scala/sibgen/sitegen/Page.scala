@@ -3,8 +3,21 @@ package sibgen.sitegen
 /** Wraps a fragment of body HTML in a complete, self-contained HTML document. */
 object Page:
 
-  /** Render a full HTML document with the given body and title. The CSS theme is inlined. */
-  def render(bodyHtml: String, title: String, css: String = Theme.default): String =
+  /** Render a full HTML document with the given body and title. The CSS theme is inlined.
+    * If `mermaidJs` is non-empty, the bundle is inlined and an init script runs `mermaid.run`
+    * once `document.fonts.ready` resolves (so labels measure against the real bundled font).
+    */
+  def render(bodyHtml: String, title: String,
+             css: String = Theme.default,
+             mermaidJs: String = ""): String =
+    val mermaidBlock =
+      if mermaidJs.nonEmpty then
+        s"""<script>
+           |$mermaidJs</script>
+           |<script>
+           |$mermaidInitScript</script>
+           |""".stripMargin
+      else ""
     s"""<!doctype html>
        |<html lang="en">
        |<head>
@@ -19,7 +32,7 @@ object Page:
        |$bodyHtml</main>
        |<script>
        |$snippetScript</script>
-       |</body>
+       |${mermaidBlock}</body>
        |</html>
        |""".stripMargin
 
@@ -41,22 +54,56 @@ object Page:
       |    var snippet = btn.closest('.snippet');
       |    if (!snippet) return;
       |    var code   = snippet.querySelector('pre code');
-      |    var result = snippet.querySelector('.snippet-result');
-      |    if (!code || !result) return;
+      |    var status = snippet.querySelector('.snippet-status');
+      |    if (!code || !status) return;
       |    btn.disabled = true;
-      |    result.hidden = false;
-      |    result.className = 'snippet-result';
-      |    result.textContent = 'Type-checking…';
+      |    snippet.classList.remove('is-ok', 'is-error');
+      |    status.textContent = '⋯ type-checking…';
       |    runCheck(code.textContent).then(function (r) {
-      |      result.className = 'snippet-result ' + (r.ok ? 'is-ok' : 'is-error');
-      |      result.textContent = r.message;
+      |      snippet.classList.add(r.ok ? 'is-ok' : 'is-error');
+      |      status.textContent = (r.ok ? '✓ ' : '⚠ ') + r.message;
+      |      btn.textContent = '» check again';
       |      btn.disabled = false;
       |    }).catch(function (err) {
-      |      result.className = 'snippet-result is-error';
-      |      result.textContent = String(err);
+      |      snippet.classList.add('is-error');
+      |      status.textContent = '⚠ ' + String(err);
+      |      btn.textContent = '» check again';
       |      btn.disabled = false;
       |    });
       |  });
+      |})();
+      |""".stripMargin
+
+  /** Initialize mermaid with the editorial palette + iA Writer Mono S, then run after fonts load.
+    * Dark/light is detected once at init; live re-render on prefers-color-scheme toggle is a follow-up.
+    */
+  private val mermaidInitScript: String =
+    """(function () {
+      |  var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      |  var lightVars = {
+      |    fontFamily: "'iA Writer Mono S', ui-monospace, monospace",
+      |    fontSize: '14px',
+      |    primaryColor: '#fbfbfd', primaryTextColor: '#2b2b2b', primaryBorderColor: '#2b2b2b',
+      |    lineColor: '#2b2b2b',    secondaryColor: '#f5f5f5',  tertiaryColor: '#ffffff',
+      |    noteBkgColor: '#fbfbfd', noteTextColor: '#2b2b2b',   noteBorderColor: '#2b2b2b',
+      |    clusterBkg:  '#fbfbfd',  clusterBorder: '#2b2b2b',   edgeLabelBackground: '#ffffff'
+      |  };
+      |  var darkVars = {
+      |    fontFamily: "'iA Writer Mono S', ui-monospace, monospace",
+      |    fontSize: '14px',
+      |    primaryColor: '#22252a', primaryTextColor: '#d8d8d4', primaryBorderColor: '#d8d8d4',
+      |    lineColor: '#d8d8d4',    secondaryColor: '#2c2e30',  tertiaryColor: '#1d1f21',
+      |    noteBkgColor: '#22252a', noteTextColor: '#d8d8d4',   noteBorderColor: '#d8d8d4',
+      |    clusterBkg:  '#22252a',  clusterBorder: '#d8d8d4',   edgeLabelBackground: '#1d1f21'
+      |  };
+      |  mermaid.initialize({
+      |    startOnLoad: false,
+      |    theme: 'base',
+      |    themeVariables: dark ? darkVars : lightVars
+      |  });
+      |  var run = function () { mermaid.run({ querySelector: 'pre.mermaid' }); };
+      |  if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+      |  else run();
       |})();
       |""".stripMargin
 

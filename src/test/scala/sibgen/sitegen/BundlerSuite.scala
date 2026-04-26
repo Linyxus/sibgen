@@ -47,3 +47,13 @@ class BundlerSuite extends munit.FunSuite:
     val a = Bundler.bundledCss
     val b = Bundler.bundledCss
     assert(a eq b, "bundledCss should be the same instance on repeat access (cached)")
+
+  test("mermaidJs loads the vendored UMD bundle and is non-trivial in size"):
+    val js = Bundler.mermaidJs
+    assert(js.length > 1_000_000, s"expected mermaid bundle to be > 1MB, got ${js.length} chars")
+    assert(js.contains("mermaid"), "expected the bundle to mention 'mermaid'")
+
+  test("mermaidJs is cached across calls"):
+    val a = Bundler.mermaidJs
+    val b = Bundler.mermaidJs
+    assert(a eq b, "mermaidJs should be the same instance on repeat access (cached)")

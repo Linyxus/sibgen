@@ -79,7 +79,7 @@ object Theme:
       |}
       |a:hover { opacity: 0.6; }
       |
-      |strong { font-weight: 700; }
+      |strong { font-weight: 600; }
       |em     { font-style: italic; }
       |del    { color: var(--fg-soft); }
       |
@@ -124,49 +124,69 @@ object Theme:
       |  border-radius: 0;
       |}
       |
-      |/* Scala snippet shell — wraps a `<pre>` with a top-right action button and a result slot. */
-      |.snippet {
-      |  position: relative;
+      |/* Mermaid blocks render their own SVG; strip the code-block chrome around them. */
+      |pre.mermaid {
+      |  background: transparent;
+      |  border: none;
+      |  padding: 0;
       |  margin: 1.5em 0;
+      |  text-align: center;
+      |  color: var(--fg-fade);
+      |  font-style: italic;
       |}
-      |.snippet pre { margin: 0; }
-      |.snippet-check {
-      |  position: absolute;
-      |  top: 0.5em;
-      |  right: 0.5em;
-      |  font-family: inherit;
-      |  font-size: 0.72em;
-      |  letter-spacing: 0.02em;
-      |  padding: 0.18em 0.6em;
-      |  background: var(--bg);
-      |  color: var(--fg-soft);
+      |pre.mermaid svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+      |.mermaid svg path,
+      |.mermaid svg line,
+      |.mermaid svg polyline { stroke-width: 1px; }
+      |
+      |/* Scala snippet shell — bordered box holding code + a metadata strip. */
+      |.snippet {
+      |  margin: 1.5em 0;
+      |  background: var(--code-bg);
       |  border: 1px solid var(--code-border);
-      |  border-radius: 0;
+      |}
+      |.snippet pre {
+      |  margin: 0;
+      |  border: none;
+      |  background: transparent;
+      |}
+      |.snippet-strip {
+      |  display: flex;
+      |  align-items: baseline;
+      |  gap: 1em;
+      |  padding: 0.45em 1em;
+      |  border-top: 1px solid var(--code-border);
+      |  font-family: 'iA Writer Mono S', 'iA Writer Mono',
+      |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+      |  font-size: 0.78em;
+      |  color: var(--fg-soft);
+      |  transition: border-top-color 0.15s ease;
+      |}
+      |.snippet-status {
+      |  flex: 1;
+      |  white-space: pre-wrap;
+      |  min-width: 0;
+      |}
+      |.snippet-check {
+      |  flex: none;
+      |  background: none;
+      |  border: none;
+      |  padding: 0;
+      |  font: inherit;
+      |  color: var(--fg-soft);
       |  cursor: pointer;
-      |  opacity: 0.55;
-      |  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      |  opacity: 0.7;
+      |  transition: opacity 0.15s ease, color 0.15s ease;
       |}
       |.snippet:hover .snippet-check,
       |.snippet-check:focus { opacity: 1; }
-      |.snippet-check:hover {
-      |  color: var(--fg);
-      |  border-color: var(--fg-soft);
-      |}
-      |.snippet-check[disabled] { cursor: progress; opacity: 0.55; }
-      |.snippet-result {
-      |  margin-top: 0.4em;
-      |  padding: 0.55em 1em;
-      |  background: var(--code-bg);
-      |  border: 1px solid var(--code-border);
-      |  border-left-width: 3px;
-      |  font-family: 'iA Writer Mono S', 'iA Writer Mono',
-      |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
-      |  font-size: 0.85em;
-      |  color: var(--fg-soft);
-      |  white-space: pre-wrap;
-      |}
-      |.snippet-result.is-error { border-left-color: #c4452d; color: var(--fg); }
-      |.snippet-result.is-ok    { border-left-color: #117a3d; color: var(--fg); }
+      |.snippet-check:hover { color: var(--fg); }
+      |.snippet-check[disabled] { cursor: progress; opacity: 0.7; }
+      |
+      |.snippet.is-ok    .snippet-strip  { border-top-color: #117a3d; }
+      |.snippet.is-ok    .snippet-status { color: var(--fg); }
+      |.snippet.is-error .snippet-strip  { border-top-color: #c4452d; }
+      |.snippet.is-error .snippet-status { color: var(--fg); }
       |
       |/* Scala 3 syntax highlighting (see sibgen.sitegen.Highlighter). */
       |.hl-kw      { color: #9d2c8f; }
@@ -221,7 +241,7 @@ object Theme:
       |  border-bottom: 1px solid var(--rule);
       |}
       |th {
-      |  font-weight: 700;
+      |  font-weight: 600;
       |  border-bottom: 2px solid var(--rule);
       |}
       |td[align="center"], th[align="center"] { text-align: center; }
