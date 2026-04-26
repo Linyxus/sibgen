@@ -63,3 +63,36 @@ class RendererSuite extends munit.FunSuite:
     assert(!html.contains("mermaid.initialize"), "did not expect mermaid init script when no mermaid block present")
     assert(!html.contains("pre.mermaid") || !html.contains("mermaid.run"),
            "did not expect mermaid runtime when no mermaid block present")
+
+  test("snippet script references the compiler artifact URLs"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("/assets/main.js"),       "expected /assets/main.js URL in snippet script")
+    assert(html.contains("/assets/classpath.bin"), "expected /assets/classpath.bin URL in snippet script")
+
+  test("snippet script bridges window.DottyCompiler and calls loadClasspath"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("window.DottyCompiler"), "expected window.DottyCompiler reference in snippet script")
+    assert(html.contains("loadClasspath"),        "expected loadClasspath call in snippet script")
+
+  test("snippet script no longer carries the old stub message"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(!html.contains("(stub) type-check backend"), "expected the stub placeholder message to be gone")
+
+  test("snippet script wires up the loading label and the eager-fetch guard"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("downloading the compiler"),    "expected loading label in snippet script")
+    assert(html.contains("document.querySelector('.snippet-check')"),
+           "expected eager-fetch guard so non-snippet pages don't fetch the compiler")
+
+  test("snippet script renders ANSI-coloured diagnostics via .ansi-* spans"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("ansiToHtml"),  "expected ANSI→HTML helper in snippet script")
+    assert(html.contains("ansi-red"),    "expected ansi-red mapping in the colour table")
+    assert(html.contains(".ansi-red"),   "expected .ansi-red CSS rule in bundled theme")
+
+  test("snippet script computes -pagewidth from the live container width"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("-pagewidth"),    "expected -pagewidth in compiler args")
+    assert(html.contains("measureColumns"), "expected dynamic column-measurement helper")
+    assert(html.contains("clientWidth") || html.contains("offsetWidth"),
+           "expected DOM width measurement in column computation")

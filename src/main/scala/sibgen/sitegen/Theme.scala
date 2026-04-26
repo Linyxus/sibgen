@@ -188,6 +188,24 @@ object Theme:
       |.snippet.is-error .snippet-strip  { border-top-color: #c4452d; }
       |.snippet.is-error .snippet-status { color: var(--fg); }
       |
+      |/* ANSI message colours (rendered into .snippet-status by ansiToHtml in Page.snippetScript). */
+      |.ansi-bold           { font-weight: 600; }
+      |.ansi-black          { color: var(--fg); }
+      |.ansi-red,
+      |.ansi-bright-red     { color: #c4452d; }
+      |.ansi-green,
+      |.ansi-bright-green   { color: #117a3d; }
+      |.ansi-yellow,
+      |.ansi-bright-yellow  { color: #aa4500; }
+      |.ansi-blue,
+      |.ansi-bright-blue    { color: var(--accent); }
+      |.ansi-magenta,
+      |.ansi-bright-magenta { color: #9d2c8f; }
+      |.ansi-cyan,
+      |.ansi-bright-cyan    { color: var(--accent); }
+      |.ansi-white,
+      |.ansi-bright-white   { color: var(--fg-soft); }
+      |
       |/* Scala 3 syntax highlighting (see sibgen.sitegen.Highlighter). */
       |.hl-kw      { color: #9d2c8f; }
       |.hl-soft    { color: #9d2c8f; font-style: italic; }
