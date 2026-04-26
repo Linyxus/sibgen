@@ -55,6 +55,24 @@ class HtmlRendererSuite extends munit.FunSuite:
     assert(out.contains("<pre><code class=\"language-bash\">echo hi"), out)
     assert(!out.contains("<span class=\"hl-"), out)
 
+  test("scala snippet is wrapped in a snippet shell with a type-check button"):
+    val out = html("```scala\nval x = 1\n```\n")
+    assert(out.contains("<div class=\"snippet snippet-scala\">"), out)
+    assert(out.contains("class=\"snippet-check\""), out)
+    assert(out.contains("data-action=\"typecheck\""), out)
+    assert(out.contains(">type-check</button>"), out)
+    assert(out.contains("<div class=\"snippet-result\" hidden></div>"), out)
+    // Shell wraps the existing <pre><code> — order: button, then code, then result.
+    val iBtn = out.indexOf("snippet-check")
+    val iPre = out.indexOf("<pre>")
+    val iRes = out.indexOf("snippet-result")
+    assert(iBtn < iPre && iPre < iRes, out)
+
+  test("non-scala fenced block has no snippet shell"):
+    val out = html("```bash\necho hi\n```\n")
+    assert(!out.contains("snippet-check"), out)
+    assert(!out.contains("snippet-result"), out)
+
   test("indented code block has no class"):
     val out = html("    val x = 1\n")
     assert(out.contains("<pre><code>val x = 1"))

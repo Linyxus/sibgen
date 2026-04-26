@@ -124,6 +124,50 @@ object Theme:
       |  border-radius: 0;
       |}
       |
+      |/* Scala snippet shell — wraps a `<pre>` with a top-right action button and a result slot. */
+      |.snippet {
+      |  position: relative;
+      |  margin: 1.5em 0;
+      |}
+      |.snippet pre { margin: 0; }
+      |.snippet-check {
+      |  position: absolute;
+      |  top: 0.5em;
+      |  right: 0.5em;
+      |  font-family: inherit;
+      |  font-size: 0.72em;
+      |  letter-spacing: 0.02em;
+      |  padding: 0.18em 0.6em;
+      |  background: var(--bg);
+      |  color: var(--fg-soft);
+      |  border: 1px solid var(--code-border);
+      |  border-radius: 0;
+      |  cursor: pointer;
+      |  opacity: 0.55;
+      |  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      |}
+      |.snippet:hover .snippet-check,
+      |.snippet-check:focus { opacity: 1; }
+      |.snippet-check:hover {
+      |  color: var(--fg);
+      |  border-color: var(--fg-soft);
+      |}
+      |.snippet-check[disabled] { cursor: progress; opacity: 0.55; }
+      |.snippet-result {
+      |  margin-top: 0.4em;
+      |  padding: 0.55em 1em;
+      |  background: var(--code-bg);
+      |  border: 1px solid var(--code-border);
+      |  border-left-width: 3px;
+      |  font-family: 'iA Writer Mono S', 'iA Writer Mono',
+      |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+      |  font-size: 0.85em;
+      |  color: var(--fg-soft);
+      |  white-space: pre-wrap;
+      |}
+      |.snippet-result.is-error { border-left-color: #c4452d; color: var(--fg); }
+      |.snippet-result.is-ok    { border-left-color: #117a3d; color: var(--fg); }
+      |
       |/* Scala 3 syntax highlighting (see sibgen.sitegen.Highlighter). */
       |.hl-kw      { color: #9d2c8f; }
       |.hl-soft    { color: #9d2c8f; font-style: italic; }
