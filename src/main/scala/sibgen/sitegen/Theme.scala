@@ -124,6 +124,24 @@ object Theme:
       |  border-radius: 0;
       |}
       |
+      |/* Scala 3 syntax highlighting (see sibgen.sitegen.Highlighter). */
+      |.hl-kw      { color: #9d2c8f; }
+      |.hl-soft    { color: #9d2c8f; font-style: italic; }
+      |.hl-num     { color: #aa4500; }
+      |.hl-str     { color: #117a3d; }
+      |.hl-op      { color: #555;     }
+      |.hl-punct   { color: #888;     }
+      |.hl-comment { color: var(--fg-fade); font-style: italic; }
+      |
+      |@media (prefers-color-scheme: dark) {
+      |  .hl-kw      { color: #d18df0; }
+      |  .hl-soft    { color: #d18df0; font-style: italic; }
+      |  .hl-num     { color: #f0a060; }
+      |  .hl-str     { color: #7dd6a3; }
+      |  .hl-op      { color: #aaa;    }
+      |  .hl-punct   { color: #888;    }
+      |}
+      |
       |ul, ol {
       |  padding-left: 1.6em;
       |  margin: 1em 0;

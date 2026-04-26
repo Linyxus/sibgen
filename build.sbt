@@ -16,6 +16,7 @@ lazy val root = project
       "org.commonmark" % "commonmark-ext-task-list-items"   % commonmarkVersion,
       "org.commonmark" % "commonmark-ext-footnotes"         % commonmarkVersion,
       "org.commonmark" % "commonmark-ext-autolink"          % commonmarkVersion,
+      "org.scala-lang" %% "scala3-compiler" % scala3Version,
       "org.scalameta" %% "munit" % "1.3.0" % Test
     )
   )

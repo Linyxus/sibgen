@@ -54,14 +54,14 @@ object HtmlRenderer:
       sb.append("</code></pre>\n")
 
     case c: adt.FencedCodeBlock =>
+      val lang = c.info.trim.takeWhile(!_.isWhitespace)
       sb.append("<pre><code")
-      val info = c.info.trim
-      if info.nonEmpty then
-        // language tag: take the first whitespace-delimited word, like commonmark
-        val lang = info.takeWhile(!_.isWhitespace)
-        sb.append(" class=\"language-").append(escAttr(lang)).append('"')
+      if lang.nonEmpty then sb.append(" class=\"language-").append(escAttr(lang)).append('"')
       sb.append('>')
-      escText(c.literal, sb)
+      if lang == "scala" || lang == "scala3" then
+        sb.append(Highlighter.highlight(c.literal))
+      else
+        escText(c.literal, sb)
       sb.append("</code></pre>\n")
 
     case h: adt.HtmlBlock =>

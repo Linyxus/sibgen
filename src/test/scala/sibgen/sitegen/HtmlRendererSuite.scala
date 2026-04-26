@@ -43,9 +43,17 @@ class HtmlRendererSuite extends munit.FunSuite:
     val out = html("---\n")
     assert(out.contains("<hr />"))
 
-  test("fenced code block carries language class"):
+  test("fenced scala block carries language class and is syntax-highlighted"):
     val out = html("```scala\nval x = 1\n```\n")
-    assert(out.contains("<pre><code class=\"language-scala\">val x = 1\n</code></pre>"))
+    assert(out.contains("<pre><code class=\"language-scala\">"), out)
+    assert(out.contains("<span class=\"hl-kw\">val</span>"), out)
+    assert(out.contains("<span class=\"hl-num\">1</span>"), out)
+    assert(out.contains("</code></pre>"), out)
+
+  test("fenced non-scala block stays plain (no spans)"):
+    val out = html("```bash\necho hi\n```\n")
+    assert(out.contains("<pre><code class=\"language-bash\">echo hi"), out)
+    assert(!out.contains("<span class=\"hl-"), out)
 
   test("indented code block has no class"):
     val out = html("    val x = 1\n")
