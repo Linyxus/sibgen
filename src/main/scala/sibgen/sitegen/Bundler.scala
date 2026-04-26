@@ -46,6 +46,28 @@ object Bundler:
       fileName = "iAWriterMonoS-Regular.ttf",
       family   = "iA Writer Mono S",
       format   = "truetype"
+    ),
+    Font(
+      resource = "/sibgen/fonts/iAWriterMonoS-Italic.ttf",
+      fileName = "iAWriterMonoS-Italic.ttf",
+      family   = "iA Writer Mono S",
+      format   = "truetype",
+      style    = "italic"
+    ),
+    Font(
+      resource = "/sibgen/fonts/iAWriterMonoS-Bold.ttf",
+      fileName = "iAWriterMonoS-Bold.ttf",
+      family   = "iA Writer Mono S",
+      format   = "truetype",
+      weight   = 700
+    ),
+    Font(
+      resource = "/sibgen/fonts/iAWriterMonoS-BoldItalic.ttf",
+      fileName = "iAWriterMonoS-BoldItalic.ttf",
+      family   = "iA Writer Mono S",
+      format   = "truetype",
+      weight   = 700,
+      style    = "italic"
     )
   )
 

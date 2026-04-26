@@ -28,6 +28,16 @@ class BundlerSuite extends munit.FunSuite:
     assert(css.contains("Source Serif 4"),  "expected Source Serif 4 @font-face in bundled CSS")
     assert(css.contains("iA Writer Mono S"), "expected iA Writer Mono S @font-face in bundled CSS")
 
+  test("bundle includes all four iA Writer Mono S faces (regular, italic, bold, bold-italic)"):
+    val css = Bundler.bundledCss
+    // Minified CSS combines weight & style as e.g. font:italic 400 12px/x or
+    // separate `font-style:italic` / `font-weight:700` declarations. Just count data URLs:
+    // Source Serif 4 woff2 + four iA Writer Mono ttfs = 1 woff2 + 4 ttfs.
+    val woff2Count = "data:font/woff2;base64,".r.findAllIn(css).length
+    val ttfCount   = "data:font/ttf;base64,".r.findAllIn(css).length
+    assertEquals(woff2Count, 1, s"expected 1 woff2 data URL, got $woff2Count")
+    assertEquals(ttfCount,   4, s"expected 4 ttf data URLs, got $ttfCount")
+
   test("bundle includes theme rules"):
     val css = Bundler.bundledCss
     assert(css.contains("--bg"), "expected theme custom property --bg in bundled CSS")
