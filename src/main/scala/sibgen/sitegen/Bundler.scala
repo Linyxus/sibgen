@@ -23,13 +23,16 @@ object Bundler:
 
   /** A font to package: where to read it from on the classpath, and the `@font-face` rule
     * that should reference it. The file is copied into the bundle under `fonts/<fileName>`.
+    *
+    * `weight` is a `min max` pair so a variable font can advertise its full wght-axis range
+    * (e.g. "400 700"); a static face just uses a single number ("400").
     */
   private final case class Font(
     resource: String,        // classpath path
     fileName: String,        // basename written into the bundle dir
     family:   String,        // CSS font-family value
     format:   String,        // "woff2" | "truetype"
-    weight:   Int  = 400,
+    weight:   String = "400",
     style:    String = "normal"
   ):
     def fontFace: String =
@@ -44,37 +47,40 @@ object Bundler:
 
   private val fonts: List[Font] = List(
     Font(
-      resource = "/sibgen/fonts/SourceSerif4-Regular.woff2",
-      fileName = "SourceSerif4-Regular.woff2",
+      resource = "/sibgen/fonts/SourceSerif4Variable-Roman.otf.woff2",
+      fileName = "SourceSerif4Variable-Roman.otf.woff2",
       family   = "Source Serif 4",
-      format   = "woff2"
+      format   = "woff2",
+      weight   = "200 900"
     ),
     Font(
-      resource = "/sibgen/fonts/iAWriterMonoS-Regular.ttf",
-      fileName = "iAWriterMonoS-Regular.ttf",
-      family   = "iA Writer Mono S",
-      format   = "truetype"
-    ),
-    Font(
-      resource = "/sibgen/fonts/iAWriterMonoS-Italic.ttf",
-      fileName = "iAWriterMonoS-Italic.ttf",
-      family   = "iA Writer Mono S",
+      resource = "/sibgen/fonts/iAWriterQuattroV.ttf",
+      fileName = "iAWriterQuattroV.ttf",
+      family   = "iA Writer Quattro V",
       format   = "truetype",
+      weight   = "400 700"
+    ),
+    Font(
+      resource = "/sibgen/fonts/iAWriterQuattroV-Italic.ttf",
+      fileName = "iAWriterQuattroV-Italic.ttf",
+      family   = "iA Writer Quattro V",
+      format   = "truetype",
+      weight   = "400 700",
       style    = "italic"
     ),
     Font(
-      resource = "/sibgen/fonts/iAWriterMonoS-Bold.ttf",
-      fileName = "iAWriterMonoS-Bold.ttf",
-      family   = "iA Writer Mono S",
+      resource = "/sibgen/fonts/iAWriterMonoV.ttf",
+      fileName = "iAWriterMonoV.ttf",
+      family   = "iA Writer Mono V",
       format   = "truetype",
-      weight   = 700
+      weight   = "400 700"
     ),
     Font(
-      resource = "/sibgen/fonts/iAWriterMonoS-BoldItalic.ttf",
-      fileName = "iAWriterMonoS-BoldItalic.ttf",
-      family   = "iA Writer Mono S",
+      resource = "/sibgen/fonts/iAWriterMonoV-Italic.ttf",
+      fileName = "iAWriterMonoV-Italic.ttf",
+      family   = "iA Writer Mono V",
       format   = "truetype",
-      weight   = 700,
+      weight   = "400 700",
       style    = "italic"
     )
   )

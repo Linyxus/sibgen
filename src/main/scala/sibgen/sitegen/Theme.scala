@@ -40,7 +40,7 @@ object Theme:
       |body {
       |  background: var(--bg);
       |  color: var(--fg);
-      |  font-family: 'iA Writer Quattro S', 'iA Writer Quattro', 'iA Writer Duo S',
+      |  font-family: 'iA Writer Quattro V', 'iA Writer Quattro S', 'iA Writer Quattro',
       |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
       |  font-size: 17px;
       |  line-height: 1.6;
@@ -79,7 +79,7 @@ object Theme:
       |}
       |a:hover { opacity: 0.6; }
       |
-      |strong { font-weight: 600; }
+      |strong { font-weight: 550; }
       |em     { font-style: italic; }
       |del    { color: var(--fg-soft); }
       |
@@ -99,7 +99,7 @@ object Theme:
       |}
       |
       |pre, code, kbd, samp {
-      |  font-family: 'iA Writer Mono S', 'iA Writer Mono',
+      |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
       |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
       |  font-size: 0.92em;
       |}
@@ -156,7 +156,7 @@ object Theme:
       |  gap: 1em;
       |  padding: 0.45em 1em;
       |  border-top: 1px solid var(--code-border);
-      |  font-family: 'iA Writer Mono S', 'iA Writer Mono',
+      |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
       |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
       |  font-size: 0.78em;
       |  color: var(--fg-soft);
@@ -241,7 +241,7 @@ object Theme:
       |  border-bottom: 1px solid var(--rule);
       |}
       |th {
-      |  font-weight: 600;
+      |  font-weight: 550;
       |  border-bottom: 2px solid var(--rule);
       |}
       |td[align="center"], th[align="center"] { text-align: center; }

@@ -23,16 +23,15 @@ class BundlerSuite extends munit.FunSuite:
     val css = Bundler.bundledCss
     assert(css.contains("data:font/ttf;base64,"), "expected base64-inlined ttf font in bundled CSS")
 
-  test("bundle declares @font-face for both Source Serif 4 and iA Writer Mono S"):
+  test("bundle declares @font-face for Source Serif 4 and the iA Writer V (variable) families"):
     val css = Bundler.bundledCss
-    assert(css.contains("Source Serif 4"),  "expected Source Serif 4 @font-face in bundled CSS")
-    assert(css.contains("iA Writer Mono S"), "expected iA Writer Mono S @font-face in bundled CSS")
+    assert(css.contains("Source Serif 4"),     "expected Source Serif 4 @font-face in bundled CSS")
+    assert(css.contains("iA Writer Mono V"),    "expected iA Writer Mono V @font-face in bundled CSS")
+    assert(css.contains("iA Writer Quattro V"), "expected iA Writer Quattro V @font-face in bundled CSS")
 
-  test("bundle includes all four iA Writer Mono S faces (regular, italic, bold, bold-italic)"):
+  test("bundle includes upright + italic for both iA Writer V families"):
     val css = Bundler.bundledCss
-    // Minified CSS combines weight & style as e.g. font:italic 400 12px/x or
-    // separate `font-style:italic` / `font-weight:700` declarations. Just count data URLs:
-    // Source Serif 4 woff2 + four iA Writer Mono ttfs = 1 woff2 + 4 ttfs.
+    // Source Serif 4 Variable woff2 + (Mono V upright/italic + Quattro V upright/italic) ttfs.
     val woff2Count = "data:font/woff2;base64,".r.findAllIn(css).length
     val ttfCount   = "data:font/ttf;base64,".r.findAllIn(css).length
     assertEquals(woff2Count, 1, s"expected 1 woff2 data URL, got $woff2Count")
