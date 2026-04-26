@@ -17,6 +17,7 @@ object Theme:
       |  --code-bg:      #fbfbfd;
       |  --code-border:  #d6dfeb;
       |  --quote-rule:   #cccccc;
+      |  --font-serif:   'New York', 'Iowan Old Style', 'Charter', Cambria, Georgia, serif;
       |}
       |
       |@media (prefers-color-scheme: dark) {
@@ -57,10 +58,11 @@ object Theme:
       |
       |h1, h2, h3, h4, h5, h6 {
       |  color: var(--fg);
+      |  font-family: var(--font-serif);
       |  font-weight: 700;
-      |  line-height: 1.25;
+      |  line-height: 1.2;
       |  margin: 2.4em 0 0.6em;
-      |  letter-spacing: -0.005em;
+      |  letter-spacing: -0.012em;
       |}
       |h1 { font-size: 1.7em; margin-top: 0; }
       |h2 { font-size: 1.35em; }
