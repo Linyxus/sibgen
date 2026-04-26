@@ -15,7 +15,7 @@ object Renderer:
   def renderHtmlBody(doc: adt.Document): String =
     htmlRenderer.render(ToJava.toDocument(doc))
 
-  /** Render a complete, self-contained HTML page with the iA Writer theme inlined. */
+  /** Render a complete, self-contained HTML page with the default theme inlined. */
   def renderPage(doc: adt.Document, title: String): String =
     Page.render(renderHtmlBody(doc), title)
 

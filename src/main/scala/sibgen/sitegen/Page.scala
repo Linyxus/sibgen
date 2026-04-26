@@ -4,7 +4,7 @@ package sibgen.sitegen
 object Page:
 
   /** Render a full HTML document with the given body and title. The CSS theme is inlined. */
-  def render(bodyHtml: String, title: String, css: String = Theme.iaWriter): String =
+  def render(bodyHtml: String, title: String, css: String = Theme.default): String =
     s"""<!doctype html>
        |<html lang="en">
        |<head>

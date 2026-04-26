@@ -3,10 +3,10 @@ package sibgen.sitegen
 /** CSS themes for [[Page]]. */
 object Theme:
 
-  /** iA Writer–inspired theme: monospace-flavoured serif fallback, narrow column, hairline rules,
-    * generous whitespace, gentle dark mode. Self-contained — no external font requests.
+  /** Default theme: monospace-flavoured stack, narrow column, hairline rules, generous whitespace,
+    * gentle dark mode. Self-contained — no external font requests.
     */
-  val iaWriter: String =
+  val default: String =
     """:root {
       |  --bg:         #ffffff;
       |  --fg:         #2b2b2b;
