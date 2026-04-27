@@ -279,7 +279,11 @@ object Page:
       |      return new Promise(function (resolve) {
       |        setTimeout(function () {
       |          try {
-      |            var args = ['-pagewidth', String(measureColumns(strip))];
+      |            // `data-scalac-options` carries `<!--% scalacOptions ... -->` directives joined
+      |            // by ' '. Splitting on /\s+/ recovers each individual flag for the compiler.
+      |            var optsAttr  = (snippet.getAttribute('data-scalac-options') || '').trim();
+      |            var extraArgs = optsAttr ? optsAttr.split(/\s+/) : [];
+      |            var args = ['-pagewidth', String(measureColumns(strip))].concat(extraArgs);
       |            var diags = c.compile(source, args);
       |            // BrowserMain exports pos.line / pos.column verbatim; dotty's SourceFile docs
       |            // ("Lines are numbered from 0", "column starting at 0") confirm both are

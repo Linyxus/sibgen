@@ -149,3 +149,18 @@ class RendererSuite extends munit.FunSuite:
     val html = Renderer.renderPage(Markdown.parse(src), "Doc")
     assert(html.contains("data-snippet-id=\"tut\""),
            "expected the directive's id to land on the snippet wrapper")
+
+  test("snippet script reads data-scalac-options and splices the tokens into compiler args"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("data-scalac-options"),
+           "expected the snippet script to consult the scalac-options attribute")
+    assert(html.contains("split(/\\s+/)"),
+           "expected whitespace splitting on the option string")
+    assert(html.contains(".concat(extraArgs)"),
+           "expected the extra-args splat into the compile() args array")
+
+  test("renderPage emits data-scalac-options from the scalacOptions directive"):
+    val src  = "# Doc\n\n<!--% scalacOptions -Wunused:all -->\n```scala\nval x = 1\n```\n"
+    val html = Renderer.renderPage(Markdown.parse(src), "Doc")
+    assert(html.contains("data-scalac-options=\"-Wunused:all\""),
+           "expected the directive's options to land on the snippet wrapper")

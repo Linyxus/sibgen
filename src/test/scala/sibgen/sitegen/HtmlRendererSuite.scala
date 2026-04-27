@@ -221,3 +221,155 @@ class HtmlRendererSuite extends munit.FunSuite:
     val out = html("<!--% snippetId nope -->\n```bash\necho hi\n```\n")
     assert(!out.contains("data-snippet-id"), out)
     assert(!out.contains("snippetId"),       out)
+
+  test("scala snippet without scalacOptions has no data-scalac-options attribute"):
+    val out = html("```scala\nval x = 1\n```\n")
+    assert(!out.contains("data-scalac-options"), out)
+
+  test("scalacOptions directive emits data-scalac-options on the next scala block"):
+    val out = html("<!--% scalacOptions -Wunused:all -->\n```scala\nval x = 1\n```\n")
+    assert(out.contains("data-scalac-options=\"-Wunused:all\""), out)
+    assert(!out.contains("scalacOptions"),  s"directive comment should not be in output: $out")
+    assert(!out.contains("<!--%"),          s"directive comment should not be in output: $out")
+
+  test("scalacOptions directive supports multiple options separated by whitespace"):
+    val out = html("<!--% scalacOptions -Wunused:all -language:strictEquality -->\n```scala\nval x = 1\n```\n")
+    assert(out.contains("data-scalac-options=\"-Wunused:all -language:strictEquality\""), out)
+
+  test("snippetId and scalacOptions stack when placed on adjacent lines"):
+    val out = html(
+      """<!--% snippetId tut -->
+        |<!--% scalacOptions -Wunused:all -->
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-snippet-id=\"tut\""),                out)
+    assert(out.contains("data-scalac-options=\"-Wunused:all\""),   out)
+
+  test("stacked directives are order-insensitive"):
+    val out = html(
+      """<!--% scalacOptions -Wunused:all -->
+        |<!--% snippetId tut -->
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-snippet-id=\"tut\""),                out)
+    assert(out.contains("data-scalac-options=\"-Wunused:all\""),   out)
+
+  test("multiple scalacOptions directives accumulate in source order"):
+    val out = html(
+      """<!--% scalacOptions -Wunused:all -->
+        |<!--% scalacOptions -language:strictEquality -Werror -->
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-scalac-options=\"-Wunused:all -language:strictEquality -Werror\""), out)
+
+  test("intervening paragraph between scalacOptions and scala block clears the pending stack"):
+    val out = html(
+      """<!--% scalacOptions -Wunused:all -->
+        |
+        |Some prose between.
+        |
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(!out.contains("data-scalac-options"), out)
+
+  test("scalacOptions directive before a non-scala fenced block is not surfaced anywhere"):
+    val out = html("<!--% scalacOptions -Wunused:all -->\n```bash\necho hi\n```\n")
+    assert(!out.contains("data-scalac-options"), out)
+    assert(!out.contains("scalacOptions"),       out)
+
+  test("global scalacOptions directive is collected from anywhere and applied to every scala snippet"):
+    val out = html(
+      """<!--% global scalacOptions -Wunused:all -->
+        |
+        |```scala
+        |val x = 1
+        |```
+        |
+        |```scala
+        |val y = 2
+        |```
+        |""".stripMargin
+    )
+    val n = "data-scalac-options=\"-Wunused:all\"".r.findAllIn(out).length
+    assertEquals(n, 2, s"expected the global flag on both wrappers, got $n: $out")
+    assert(!out.contains("global scalacOptions"), s"directive comment should not be in output: $out")
+    assert(!out.contains("<!--%"),               s"directive comment should not be in output: $out")
+
+  test("global scalacOptions applies to a snippet that appears BEFORE the directive (pre-pass)"):
+    val out = html(
+      """```scala
+        |val x = 1
+        |```
+        |
+        |<!--% global scalacOptions -Werror -->
+        |""".stripMargin
+    )
+    assert(out.contains("data-scalac-options=\"-Werror\""), out)
+
+  test("multiple global scalacOptions directives accumulate in source order"):
+    val out = html(
+      """<!--% global scalacOptions -Wunused:all -->
+        |<!--% global scalacOptions -Werror -->
+        |
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-scalac-options=\"-Wunused:all -Werror\""), out)
+
+  test("global scalacOptions layers underneath per-snippet scalacOptions"):
+    val out = html(
+      """<!--% global scalacOptions -Wunused:all -->
+        |
+        |<!--% scalacOptions -Werror -->
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    // Globals first (page baseline), per-snippet pendings after (snippet override).
+    assert(out.contains("data-scalac-options=\"-Wunused:all -Werror\""), out)
+
+  test("global scalacOptions directive on a page with no snippets has no rendering effect"):
+    val out = html("<!--% global scalacOptions -Wunused:all -->\n\nJust prose.\n")
+    assert(!out.contains("data-scalac-options"), out)
+    assert(!out.contains("global scalacOptions"), out)
+
+  test("global scalacOptions supports multiple flags in a single directive"):
+    val out = html(
+      """<!--% global scalacOptions -Wunused:all -language:strictEquality -->
+        |
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-scalac-options=\"-Wunused:all -language:strictEquality\""), out)
+
+  test("unrecognized directive-shaped comment is dropped silently and preserves pending state"):
+    // A typo'd directive (`snipetId` instead of `snippetId`) shouldn't break the surrounding
+    // chain — the `snippetId` above should still bind to the next Scala block.
+    val out = html(
+      """<!--% snippetId tut -->
+        |<!--% snipetId typo -->
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-snippet-id=\"tut\""), out)
+    assert(!out.contains("snipetId"),               s"typo'd directive should not be in output: $out")
+    assert(!out.contains("<!--%"),                  s"directive comments should not be in output: $out")

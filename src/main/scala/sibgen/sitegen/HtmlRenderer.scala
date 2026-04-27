@@ -14,40 +14,84 @@ object HtmlRenderer:
   /** Render the document body (no `<html>`/`<head>`/`<body>` wrapper). */
   def render(doc: adt.Document): String =
     val sb = StringBuilder()
-    val state = State()
+    // Pre-pass: collect every `<!--% global scalacOptions … -->` directive at top level so the
+    // resulting flag list applies to every Scala snippet on the page, regardless of whether the
+    // snippet appears before or after the directive.
+    val state = State(collectGlobalScalacOptionss(doc))
     doc.children.foreach(b => renderBlock(b, sb, state))
     if state.footnotes.nonEmpty then renderFootnotes(sb, state)
     sb.toString
 
   // ---------- state ----------
 
-  private final class State:
+  private final class State(val globalScalacOptions: Vector[String]):
     /** Footnote definitions, in the order their references first appeared. */
     val footnotes = collection.mutable.LinkedHashMap.empty[String, adt.FootnoteDefinition]
     /** Number assigned to each label, in reference order. */
     val refIndex  = collection.mutable.LinkedHashMap.empty[String, Int]
-    /** Snippet id parsed from the most recent `<!--% snippetId X -->` directive, awaiting the next
-      * block. Cleared by `renderBlock` after every render so only the *immediately* following
-      * block can consume it. */
+    /** Snippet id parsed from the most recent `<!--% snippetId X -->` directive in the current
+      * directive stack. Cleared by `renderBlock` after every render so only the *immediately*
+      * following block (chain of directive comments) can consume it. */
     var pendingSnippetId: Option[String] = None
+    /** Compiler options accumulated from `<!--% scalacOptions ... -->` directive(s) in the
+      * current directive stack. Multiple directives concatenate in source order. */
+    var pendingScalacOptions: Vector[String] = Vector.empty
 
     /** Index for `label`, registering it on first use. */
     def indexOf(label: String): Int =
       refIndex.getOrElseUpdate(label, refIndex.size + 1)
 
-  private val SnippetDirectiveRx = """^\s*<!--%\s+snippetId\s+(\S+)\s*-->\s*$""".r
+  private enum Directive:
+    case SnippetId(id: String)
+    case ScalacOptions(options: Vector[String])
+    case GlobalScalacOptions(options: Vector[String])
 
-  private def parseSnippetDirective(literal: String): Option[String] =
-    SnippetDirectiveRx.findFirstMatchIn(literal.stripSuffix("\n")).map(_.group(1))
+  private val SnippetIdDirectiveRx          = """^\s*<!--%\s+snippetId\s+(\S+)\s*-->\s*$""".r
+  private val ScalacOptionsDirectiveRx      = """^\s*<!--%\s+scalacOptions\s+(.+?)\s*-->\s*$""".r
+  private val GlobalScalacOptionsDirectiveRx = """^\s*<!--%\s+global\s+scalacOptions\s+(.+?)\s*-->\s*$""".r
+  private val DirectivePrefixRx             = """^\s*<!--%\s""".r
+
+  private def parseDirective(literal: String): Option[Directive] =
+    val s = literal.stripSuffix("\n")
+    SnippetIdDirectiveRx.findFirstMatchIn(s).map(m => Directive.SnippetId(m.group(1)))
+      .orElse(ScalacOptionsDirectiveRx.findFirstMatchIn(s).map { m =>
+        Directive.ScalacOptions(m.group(1).trim.split("""\s+""").toVector.filter(_.nonEmpty))
+      })
+      .orElse(GlobalScalacOptionsDirectiveRx.findFirstMatchIn(s).map { m =>
+        Directive.GlobalScalacOptions(m.group(1).trim.split("""\s+""").toVector.filter(_.nonEmpty))
+      })
+
+  /** Walk the document's top-level blocks and gather every `global scalacOptions` directive's
+    * flag list, in source order. Directives nested inside blockquotes / lists are not collected
+    * — globals are a top-of-document construct. */
+  private def collectGlobalScalacOptionss(doc: adt.Document): Vector[String] =
+    val buf = Vector.newBuilder[String]
+    doc.children.foreach {
+      case h: adt.HtmlBlock =>
+        parseDirective(h.literal) match
+          case Some(Directive.GlobalScalacOptions(opts)) => buf ++= opts
+          case _ => ()
+      case _ => ()
+    }
+    buf.result()
+
+  /** True if the literal looks like a `<!--% ... -->` directive comment, even if no specific
+    * directive parser recognized it. Used to distinguish typo'd directives (drop silently,
+    * preserve pending state) from ordinary HTML comments (pass through, clear pending state). */
+  private def isDirectiveSyntax(literal: String): Boolean =
+    DirectivePrefixRx.findFirstIn(literal.stripSuffix("\n")).isDefined
 
   // ---------- blocks ----------
 
   private def renderBlock(b: adt.Block, sb: StringBuilder, st: State): Unit =
-    // Cache-then-clear: only the very next block (a Scala FencedCodeBlock) can consume a pending
-    // snippet directive. Anything else falls through with `pending = None` so an intervening
-    // paragraph or non-directive comment naturally drops the binding.
-    val pending = st.pendingSnippetId
-    st.pendingSnippetId = None
+    // Cache-then-clear both pendings: only the very next block can consume them. The HtmlBlock
+    // case below selectively restores them so a chain of stacked directive comments accumulates,
+    // while any non-directive intervening block (paragraph, ordinary HTML comment, …) breaks the
+    // chain by leaving both pendings cleared.
+    val pendingId   = st.pendingSnippetId
+    val pendingOpts = st.pendingScalacOptions
+    st.pendingSnippetId     = None
+    st.pendingScalacOptions = Vector.empty
     b match
     case bq: adt.BlockQuote =>
       sb.append("<blockquote>\n")
@@ -86,9 +130,16 @@ object HtmlRenderer:
         sb.append("</pre>\n")
       else
         if isScala then
-          val id = pending.getOrElse(DefaultSnippetId)
+          val id = pendingId.getOrElse(DefaultSnippetId)
           sb.append("<div class=\"snippet snippet-scala\" data-snippet-id=\"")
-            .append(escAttr(id)).append("\">\n")
+            .append(escAttr(id)).append('"')
+          // Page-wide globals come first, per-snippet pendings layer on top. Order matters
+          // for compiler flags whose later-wins semantics let a snippet override a page setting.
+          val combinedOpts = st.globalScalacOptions ++ pendingOpts
+          if combinedOpts.nonEmpty then
+            sb.append(" data-scalac-options=\"")
+              .append(escAttr(combinedOpts.mkString(" "))).append('"')
+          sb.append(">\n")
         sb.append("<pre><code")
         if lang.nonEmpty then sb.append(" class=\"language-").append(escAttr(lang)).append('"')
         sb.append('>')
@@ -106,13 +157,30 @@ object HtmlRenderer:
           sb.append("</div>\n")
 
     case h: adt.HtmlBlock =>
-      // `<!--% snippetId X -->` is a build-time directive; arm the pending id and emit nothing
-      // so it doesn't leak into the rendered HTML. Anything else is plain HTML — pass through.
-      parseSnippetDirective(h.literal) match
-        case Some(id) => st.pendingSnippetId = Some(id)
+      // Recognized `<!--% ... -->` directives arm pending state and emit nothing; siblings are
+      // preserved so a stack of directive comments accumulates. An unrecognized but
+      // directive-shaped comment is also dropped silently with pendings preserved (so a typo
+      // can't quietly break the chain). Ordinary HTML comments pass through and break the chain.
+      parseDirective(h.literal) match
+        case Some(Directive.SnippetId(id)) =>
+          st.pendingSnippetId     = Some(id)
+          st.pendingScalacOptions = pendingOpts
+        case Some(Directive.ScalacOptions(opts)) =>
+          st.pendingSnippetId     = pendingId
+          st.pendingScalacOptions = pendingOpts ++ opts
+        case Some(Directive.GlobalScalacOptions(_)) =>
+          // Already collected in the pre-pass and threaded onto every Scala snippet via
+          // st.globalScalacOptions. Just preserve sibling pendings so a directive stack with
+          // a `global` line interleaved doesn't break the chain.
+          st.pendingSnippetId     = pendingId
+          st.pendingScalacOptions = pendingOpts
         case None =>
-          sb.append(h.literal)
-          if !h.literal.endsWith("\n") then sb.append('\n')
+          if isDirectiveSyntax(h.literal) then
+            st.pendingSnippetId     = pendingId
+            st.pendingScalacOptions = pendingOpts
+          else
+            sb.append(h.literal)
+            if !h.literal.endsWith("\n") then sb.append('\n')
 
     case bl: adt.BulletList =>
       sb.append("<ul>\n")
