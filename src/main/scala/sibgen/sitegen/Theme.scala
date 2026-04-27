@@ -210,7 +210,15 @@ object Theme:
       |.snippet-scala .cm-content { padding: 0; }
       |.snippet-scala .cm-line    { padding: 0; }
       |.snippet-scala .cm-gutters { display: none; }
-      |.snippet-scala .cm-cursor  { border-left: 1px solid var(--fg); }
+      |/* Cursor visibility: CM6's baseTheme hardcodes both the contenteditable's
+      | * native caret (`.cm-light .cm-content { caret-color: black }`) and the
+      | * overlay div (`.cm-cursor { border-left: 1.2px solid black }`). Without
+      | * loading an explicit dark theme extension, the editor stays in `cm-light`
+      | * even in OS dark mode — black caret against dark `--code-bg` is invisible.
+      | * Three-class specificity wins over CM6's two-class baseTheme selectors. */
+      |.snippet-scala .cm-editor .cm-content        { caret-color: var(--fg); }
+      |.snippet-scala .cm-editor .cm-cursor,
+      |.snippet-scala .cm-editor .cm-dropCursor     { border-left-color: var(--fg); }
       |.snippet-scala .cm-selectionBackground,
       |.snippet-scala .cm-content ::selection { background: rgba(110, 132, 161, 0.20); }
       |@media (prefers-color-scheme: dark) {
