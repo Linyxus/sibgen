@@ -375,14 +375,14 @@ object Page:
       |})();
       |""".stripMargin
 
-  /** Initialize mermaid with the editorial palette + iA Writer Mono S, then run after fonts load.
+  /** Initialize mermaid with the editorial palette + Maple Mono, then run after fonts load.
     * Dark/light is detected once at init; live re-render on prefers-color-scheme toggle is a follow-up.
     */
   private val mermaidInitScript: String =
     """(function () {
       |  var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       |  var lightVars = {
-      |    fontFamily: "'iA Writer Mono S', ui-monospace, monospace",
+      |    fontFamily: "'Maple Mono', ui-monospace, monospace",
       |    fontSize: '14px',
       |    primaryColor: '#fbfbfd', primaryTextColor: '#2b2b2b', primaryBorderColor: '#2b2b2b',
       |    lineColor: '#2b2b2b',    secondaryColor: '#f5f5f5',  tertiaryColor: '#ffffff',
@@ -390,7 +390,7 @@ object Page:
       |    clusterBkg:  '#fbfbfd',  clusterBorder: '#2b2b2b',   edgeLabelBackground: '#ffffff'
       |  };
       |  var darkVars = {
-      |    fontFamily: "'iA Writer Mono S', ui-monospace, monospace",
+      |    fontFamily: "'Maple Mono', ui-monospace, monospace",
       |    fontSize: '14px',
       |    primaryColor: '#22252a', primaryTextColor: '#d8d8d4', primaryBorderColor: '#d8d8d4',
       |    lineColor: '#d8d8d4',    secondaryColor: '#2c2e30',  tertiaryColor: '#1d1f21',

@@ -99,7 +99,7 @@ object Theme:
       |}
       |
       |pre, code, kbd, samp {
-      |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
+      |  font-family: 'Maple Mono',
       |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
       |  font-size: 0.92em;
       |}
@@ -161,7 +161,7 @@ object Theme:
       |  row-gap: 0.4em;
       |  padding: 0.45em 1em;
       |  border-top: 1px solid var(--code-border);
-      |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
+      |  font-family: 'Maple Mono',
       |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
       |  font-size: 0.78em;
       |  color: var(--fg-soft);
@@ -201,7 +201,7 @@ object Theme:
       |.snippet-scala .cm-editor.cm-focused  { outline: none; }
       |.snippet-scala .cm-scroller {
       |  /* Match the original `pre, code` rules — CM6 ate the <pre> so we have to set them here. */
-      |  font-family: 'iA Writer Mono V', 'iA Writer Mono S', 'iA Writer Mono',
+      |  font-family: 'Maple Mono',
       |               ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
       |  font-size: 0.92em;
       |  line-height: 1.55;

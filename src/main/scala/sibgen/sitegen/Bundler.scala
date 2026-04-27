@@ -76,18 +76,18 @@ object Bundler:
       style    = "italic"
     ),
     Font(
-      resource = "/sibgen/fonts/iAWriterMonoV.ttf",
-      fileName = "iAWriterMonoV.ttf",
-      family   = "iA Writer Mono V",
-      format   = "truetype",
-      weight   = "400 700"
+      resource = "/sibgen/fonts/MapleMono-Variable.woff2",
+      fileName = "MapleMono-Variable.woff2",
+      family   = "Maple Mono",
+      format   = "woff2",
+      weight   = "100 900"
     ),
     Font(
-      resource = "/sibgen/fonts/iAWriterMonoV-Italic.ttf",
-      fileName = "iAWriterMonoV-Italic.ttf",
-      family   = "iA Writer Mono V",
-      format   = "truetype",
-      weight   = "400 700",
+      resource = "/sibgen/fonts/MapleMono-Variable-Italic.woff2",
+      fileName = "MapleMono-Variable-Italic.woff2",
+      family   = "Maple Mono",
+      format   = "woff2",
+      weight   = "100 900",
       style    = "italic"
     )
   )
