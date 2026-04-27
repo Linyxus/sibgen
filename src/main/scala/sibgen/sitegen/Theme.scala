@@ -145,6 +145,9 @@ object Theme:
       |  background: var(--code-bg);
       |  border: 1px solid var(--code-border);
       |}
+      |/* Hidden snippets (`<!--% snippetId X hidden -->`) stay in the DOM so they can
+      | * still contribute source to their channel, but render nothing. */
+      |.snippet-hidden { display: none; }
       |.snippet pre {
       |  margin: 0;
       |  border: none;

@@ -359,6 +359,53 @@ class HtmlRendererSuite extends munit.FunSuite:
     )
     assert(out.contains("data-scalac-options=\"-Wunused:all -language:strictEquality\""), out)
 
+  test("snippetId with hidden modifier marks the wrapper with snippet-hidden and omits the strip"):
+    val out = html("<!--% snippetId helpers hidden -->\n```scala\ndef helper: Int = 0\n```\n")
+    assert(out.contains("class=\"snippet snippet-scala snippet-hidden\""), out)
+    assert(out.contains("data-snippet-id=\"helpers\""), out)
+    // Hidden snippets stay in the DOM (so channel concatenation can find them) but render
+    // no interactive controls — strip / status / button / detail are all suppressed.
+    assert(!out.contains("snippet-strip"),  s"hidden snippet should not render the strip: $out")
+    assert(!out.contains("snippet-status"), s"hidden snippet should not render the status field: $out")
+    assert(!out.contains("snippet-check"),  s"hidden snippet should not render the type-check button: $out")
+    assert(!out.contains("snippet-detail"), s"hidden snippet should not render the detail panel: $out")
+    // The <pre><code> still carries the source so readSnippetSource can fall back to it.
+    assert(out.contains("def helper: Int = 0"), out)
+
+  test("snippetId without hidden does not emit snippet-hidden class"):
+    val out = html("<!--% snippetId tut -->\n```scala\nval x = 1\n```\n")
+    assert(!out.contains("snippet-hidden"), out)
+
+  test("snippetId hidden stacks with scalacOptions in either order"):
+    val outA = html(
+      """<!--% snippetId helpers hidden -->
+        |<!--% scalacOptions -Wunused:all -->
+        |```scala
+        |val helper = 1
+        |```
+        |""".stripMargin
+    )
+    assert(outA.contains("class=\"snippet snippet-scala snippet-hidden\""),    outA)
+    assert(outA.contains("data-snippet-id=\"helpers\""),                       outA)
+    assert(outA.contains("data-scalac-options=\"-Wunused:all\""),              outA)
+
+    val outB = html(
+      """<!--% scalacOptions -Wunused:all -->
+        |<!--% snippetId helpers hidden -->
+        |```scala
+        |val helper = 1
+        |```
+        |""".stripMargin
+    )
+    assert(outB.contains("class=\"snippet snippet-scala snippet-hidden\""),    outB)
+    assert(outB.contains("data-snippet-id=\"helpers\""),                       outB)
+    assert(outB.contains("data-scalac-options=\"-Wunused:all\""),              outB)
+
+  test("snippetId hidden directive comment is not in the output"):
+    val out = html("<!--% snippetId helpers hidden -->\n```scala\nval x = 1\n```\n")
+    assert(!out.contains("<!--%"), s"directive comment should not be in output: $out")
+    assert(!out.contains("hidden -->"), s"directive comment should not be in output: $out")
+
   test("unrecognized directive-shaped comment is dropped silently and preserves pending state"):
     // A typo'd directive (`snipetId` instead of `snippetId`) shouldn't break the surrounding
     // chain — the `snippetId` above should still bind to the next Scala block.

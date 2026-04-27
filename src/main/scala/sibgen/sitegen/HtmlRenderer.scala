@@ -29,10 +29,10 @@ object HtmlRenderer:
     val footnotes = collection.mutable.LinkedHashMap.empty[String, adt.FootnoteDefinition]
     /** Number assigned to each label, in reference order. */
     val refIndex  = collection.mutable.LinkedHashMap.empty[String, Int]
-    /** Snippet id parsed from the most recent `<!--% snippetId X -->` directive in the current
-      * directive stack. Cleared by `renderBlock` after every render so only the *immediately*
-      * following block (chain of directive comments) can consume it. */
-    var pendingSnippetId: Option[String] = None
+    /** Snippet id (and `hidden` modifier) parsed from the most recent `<!--% snippetId X [hidden]
+      * -->` directive in the current directive stack. Cleared by `renderBlock` after every render
+      * so only the *immediately* following block (chain of directive comments) can consume it. */
+    var pendingSnippetId: Option[(String, Boolean)] = None
     /** Compiler options accumulated from `<!--% scalacOptions ... -->` directive(s) in the
       * current directive stack. Multiple directives concatenate in source order. */
     var pendingScalacOptions: Vector[String] = Vector.empty
@@ -42,18 +42,18 @@ object HtmlRenderer:
       refIndex.getOrElseUpdate(label, refIndex.size + 1)
 
   private enum Directive:
-    case SnippetId(id: String)
+    case SnippetId(id: String, hidden: Boolean)
     case ScalacOptions(options: Vector[String])
     case GlobalScalacOptions(options: Vector[String])
 
-  private val SnippetIdDirectiveRx          = """^\s*<!--%\s+snippetId\s+(\S+)\s*-->\s*$""".r
+  private val SnippetIdDirectiveRx          = """^\s*<!--%\s+snippetId\s+(\S+)(?:\s+(hidden))?\s*-->\s*$""".r
   private val ScalacOptionsDirectiveRx      = """^\s*<!--%\s+scalacOptions\s+(.+?)\s*-->\s*$""".r
   private val GlobalScalacOptionsDirectiveRx = """^\s*<!--%\s+global\s+scalacOptions\s+(.+?)\s*-->\s*$""".r
   private val DirectivePrefixRx             = """^\s*<!--%\s""".r
 
   private def parseDirective(literal: String): Option[Directive] =
     val s = literal.stripSuffix("\n")
-    SnippetIdDirectiveRx.findFirstMatchIn(s).map(m => Directive.SnippetId(m.group(1)))
+    SnippetIdDirectiveRx.findFirstMatchIn(s).map(m => Directive.SnippetId(m.group(1), m.group(2) != null))
       .orElse(ScalacOptionsDirectiveRx.findFirstMatchIn(s).map { m =>
         Directive.ScalacOptions(m.group(1).trim.split("""\s+""").toVector.filter(_.nonEmpty))
       })
@@ -129,10 +129,12 @@ object HtmlRenderer:
         escText(literal, sb)
         sb.append("</pre>\n")
       else
+        val (snipId, snipHidden) =
+          if isScala then pendingId.getOrElse((DefaultSnippetId, false)) else ("", false)
         if isScala then
-          val id = pendingId.getOrElse(DefaultSnippetId)
-          sb.append("<div class=\"snippet snippet-scala\" data-snippet-id=\"")
-            .append(escAttr(id)).append('"')
+          sb.append("<div class=\"snippet snippet-scala")
+          if snipHidden then sb.append(" snippet-hidden")
+          sb.append("\" data-snippet-id=\"").append(escAttr(snipId)).append('"')
           // Page-wide globals come first, per-snippet pendings layer on top. Order matters
           // for compiler flags whose later-wins semantics let a snippet override a page setting.
           val combinedOpts = st.globalScalacOptions ++ pendingOpts
@@ -149,11 +151,15 @@ object HtmlRenderer:
         escText(literal, sb)
         sb.append("</code></pre>\n")
         if isScala then
-          sb.append("<div class=\"snippet-strip\">\n")
-          sb.append("<span class=\"snippet-status\" aria-live=\"polite\"></span>\n")
-          sb.append("<button type=\"button\" class=\"snippet-check\" data-action=\"typecheck\">» type-check</button>\n")
-          sb.append("<div class=\"snippet-detail\" hidden></div>\n")
-          sb.append("</div>\n")
+          // Hidden snippets only contribute source to their channel — no interactive strip,
+          // no type-check button. The wrapper itself is hidden via CSS but stays in the DOM
+          // so buildSnippetCompileUnit can still find it via `data-snippet-id`.
+          if !snipHidden then
+            sb.append("<div class=\"snippet-strip\">\n")
+            sb.append("<span class=\"snippet-status\" aria-live=\"polite\"></span>\n")
+            sb.append("<button type=\"button\" class=\"snippet-check\" data-action=\"typecheck\">» type-check</button>\n")
+            sb.append("<div class=\"snippet-detail\" hidden></div>\n")
+            sb.append("</div>\n")
           sb.append("</div>\n")
 
     case h: adt.HtmlBlock =>
@@ -162,8 +168,8 @@ object HtmlRenderer:
       // directive-shaped comment is also dropped silently with pendings preserved (so a typo
       // can't quietly break the chain). Ordinary HTML comments pass through and break the chain.
       parseDirective(h.literal) match
-        case Some(Directive.SnippetId(id)) =>
-          st.pendingSnippetId     = Some(id)
+        case Some(Directive.SnippetId(id, hidden)) =>
+          st.pendingSnippetId     = Some((id, hidden))
           st.pendingScalacOptions = pendingOpts
         case Some(Directive.ScalacOptions(opts)) =>
           st.pendingSnippetId     = pendingId
