@@ -51,7 +51,7 @@ object Theme:
       |}
       |
       |main {
-      |  max-width: 44rem;
+      |  max-width: 55.44rem;
       |  margin: 4rem auto 6rem;
       |  padding: 0 1.5rem;
       |}
