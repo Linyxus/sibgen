@@ -1,6 +1,6 @@
 # sibgen
 
-Parse markdown into a Scala 3 ADT and render it as a self-contained HTML page.
+Generate interactive blogs with editable and typecheckable Scala snippets from Markdown files.
 
 ```
 sbt 'runMain render file.md'    # → file.html
