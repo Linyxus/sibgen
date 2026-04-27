@@ -16,7 +16,7 @@ object Renderer:
   def renderPage(doc: adt.Document, title: String): String =
     val body         = renderHtmlBody(doc)
     val mermaidJs    = if body.contains("<pre class=\"mermaid\">")        then Bundler.mermaidJs    else ""
-    val codemirrorJs = if body.contains("<div class=\"snippet snippet-scala\">") then Bundler.codemirrorJs else ""
+    val codemirrorJs = if body.contains("class=\"snippet snippet-scala\"")  then Bundler.codemirrorJs else ""
     Page.render(body, title, Bundler.bundledCss, mermaidJs, codemirrorJs)
 
   /** Extract a plain-text title from the document's first H1, if any. */

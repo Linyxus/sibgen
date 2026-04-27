@@ -273,7 +273,7 @@ object Page:
       |    return Math.max(20, Math.floor(availableW / charW) - 1);
       |  }
       |
-      |  function runCheck(snippet, strip, status, detail, btn, source) {
+      |  function runCheck(snippet, strip, status, detail, btn, source, startLine) {
       |    return ensureCompiler().then(function (c) {
       |      // Yield once so '⋯ type-checking…' paints before compile() blocks the main thread.
       |      return new Promise(function (resolve) {
@@ -281,7 +281,29 @@ object Page:
       |          try {
       |            var args = ['-pagewidth', String(measureColumns(strip))];
       |            var diags = c.compile(source, args);
-      |            var r = formatDiagnostics(diags);
+      |            // BrowserMain exports pos.line / pos.column verbatim; dotty's SourceFile docs
+      |            // ("Lines are numbered from 0", "column starting at 0") confirm both are
+      |            // 0-indexed. Normalize to 1-indexed so filter, rebase, and label rendering
+      |            // can all assume the conventional editor indexing.
+      |            for (var n = 0; n < diags.length; n++) {
+      |              var dn = diags[n];
+      |              if (typeof dn.line   === 'number' && dn.line   >= 0) dn.line   = dn.line   + 1;
+      |              if (typeof dn.column === 'number' && dn.column >= 0) dn.column = dn.column + 1;
+      |            }
+      |            // Drop diagnostics from prepended sibling snippets, rebase line numbers so
+      |            // bracketed labels point at rows in the user's own editor. No-position
+      |            // diagnostics (line < 0) are kept as-is — file-level errors shouldn't vanish.
+      |            var filtered = [];
+      |            for (var k = 0; k < diags.length; k++) {
+      |              var d = diags[k];
+      |              if (typeof d.line !== 'number' || d.line < 0 || d.line >= startLine) {
+      |                var copy = {};
+      |                for (var key in d) if (Object.prototype.hasOwnProperty.call(d, key)) copy[key] = d[key];
+      |                if (typeof d.line === 'number' && d.line >= 0) copy.line = d.line - startLine + 1;
+      |                filtered.push(copy);
+      |              }
+      |            }
+      |            var r = formatDiagnostics(filtered);
       |            applyResult(snippet, status, detail, btn, r.kind, r.summary, r.detail);
       |          } catch (e) {
       |            applyResult(snippet, status, detail, btn, 'is-error', '⚠ ' + escapeHtml(e && e.message ? e.message : String(e)), '');
@@ -303,6 +325,27 @@ object Page:
       |    return code ? code.textContent : '';
       |  }
       |
+      |  // Concatenate all earlier .snippet-scala blocks sharing this snippet's data-snippet-id,
+      |  // so the compiler sees the running history of the channel. Returns the combined source
+      |  // plus the 1-indexed line where this snippet's own text begins (used to filter and rebase
+      |  // diagnostics back into the editor's local coordinates).
+      |  function buildSnippetCompileUnit(snippet) {
+      |    var id = snippet.getAttribute('data-snippet-id') || 'default-global-snippet';
+      |    var sel = '.snippet-scala[data-snippet-id="' + id.replace(/"/g, '\\"') + '"]';
+      |    var siblings = document.querySelectorAll(sel);
+      |    var pieces = [];
+      |    for (var i = 0; i < siblings.length; i++) {
+      |      var s = siblings[i];
+      |      if (s === snippet) break;
+      |      pieces.push(readSnippetSource(s));
+      |    }
+      |    var prefix = pieces.length ? pieces.join('\n') + '\n' : '';
+      |    var current = readSnippetSource(snippet);
+      |    var startLine = 1;
+      |    for (var j = 0; j < prefix.length; j++) if (prefix.charCodeAt(j) === 10) startLine++;
+      |    return { source: prefix + current, startLine: startLine };
+      |  }
+      |
       |  document.addEventListener('click', function (e) {
       |    var btn = e.target.closest && e.target.closest('.snippet-check');
       |    if (!btn || btn.disabled) return;
@@ -317,7 +360,8 @@ object Page:
       |    detail.hidden = true;
       |    detail.innerHTML = '';
       |    status.textContent = '⋯ type-checking…';
-      |    runCheck(snippet, strip, status, detail, btn, readSnippetSource(snippet)).then(function () {
+      |    var unit = buildSnippetCompileUnit(snippet);
+      |    runCheck(snippet, strip, status, detail, btn, unit.source, unit.startLine).then(function () {
       |      btn.disabled = false;
       |    });
       |  });

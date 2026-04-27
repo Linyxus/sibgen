@@ -7,6 +7,10 @@ import sibgen.md.adt
   */
 object HtmlRenderer:
 
+  /** Default `data-snippet-id` for Scala snippets that aren't tagged with a `<!--% snippetId … -->`
+    * directive — they all share one compilation channel so plain prose-style pages "just work". */
+  val DefaultSnippetId: String = "default-global-snippet"
+
   /** Render the document body (no `<html>`/`<head>`/`<body>` wrapper). */
   def render(doc: adt.Document): String =
     val sb = StringBuilder()
@@ -22,14 +26,29 @@ object HtmlRenderer:
     val footnotes = collection.mutable.LinkedHashMap.empty[String, adt.FootnoteDefinition]
     /** Number assigned to each label, in reference order. */
     val refIndex  = collection.mutable.LinkedHashMap.empty[String, Int]
+    /** Snippet id parsed from the most recent `<!--% snippetId X -->` directive, awaiting the next
+      * block. Cleared by `renderBlock` after every render so only the *immediately* following
+      * block can consume it. */
+    var pendingSnippetId: Option[String] = None
 
     /** Index for `label`, registering it on first use. */
     def indexOf(label: String): Int =
       refIndex.getOrElseUpdate(label, refIndex.size + 1)
 
+  private val SnippetDirectiveRx = """^\s*<!--%\s+snippetId\s+(\S+)\s*-->\s*$""".r
+
+  private def parseSnippetDirective(literal: String): Option[String] =
+    SnippetDirectiveRx.findFirstMatchIn(literal.stripSuffix("\n")).map(_.group(1))
+
   // ---------- blocks ----------
 
-  private def renderBlock(b: adt.Block, sb: StringBuilder, st: State): Unit = b match
+  private def renderBlock(b: adt.Block, sb: StringBuilder, st: State): Unit =
+    // Cache-then-clear: only the very next block (a Scala FencedCodeBlock) can consume a pending
+    // snippet directive. Anything else falls through with `pending = None` so an intervening
+    // paragraph or non-directive comment naturally drops the binding.
+    val pending = st.pendingSnippetId
+    st.pendingSnippetId = None
+    b match
     case bq: adt.BlockQuote =>
       sb.append("<blockquote>\n")
       bq.children.foreach(c => renderBlock(c, sb, st))
@@ -66,7 +85,10 @@ object HtmlRenderer:
         escText(literal, sb)
         sb.append("</pre>\n")
       else
-        if isScala then sb.append("<div class=\"snippet snippet-scala\">\n")
+        if isScala then
+          val id = pending.getOrElse(DefaultSnippetId)
+          sb.append("<div class=\"snippet snippet-scala\" data-snippet-id=\"")
+            .append(escAttr(id)).append("\">\n")
         sb.append("<pre><code")
         if lang.nonEmpty then sb.append(" class=\"language-").append(escAttr(lang)).append('"')
         sb.append('>')
@@ -84,8 +106,13 @@ object HtmlRenderer:
           sb.append("</div>\n")
 
     case h: adt.HtmlBlock =>
-      sb.append(h.literal)
-      if !h.literal.endsWith("\n") then sb.append('\n')
+      // `<!--% snippetId X -->` is a build-time directive; arm the pending id and emit nothing
+      // so it doesn't leak into the rendered HTML. Anything else is plain HTML — pass through.
+      parseSnippetDirective(h.literal) match
+        case Some(id) => st.pendingSnippetId = Some(id)
+        case None =>
+          sb.append(h.literal)
+          if !h.literal.endsWith("\n") then sb.append('\n')
 
     case bl: adt.BulletList =>
       sb.append("<ul>\n")

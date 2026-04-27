@@ -100,7 +100,7 @@ class RendererSuite extends munit.FunSuite:
   test("renderPage inlines the CodeMirror bundle when the doc contains a Scala snippet"):
     val src  = "# Doc\n\n```scala\nval x = 1\n```\n"
     val html = Renderer.renderPage(Markdown.parse(src), "Doc")
-    assert(html.contains("<div class=\"snippet snippet-scala\">"), "expected scala snippet shell")
+    assert(html.contains("class=\"snippet snippet-scala\""),       "expected scala snippet shell")
     assert(html.contains("SibgenSnippets"),                        "expected codemirror bundle to be inlined")
     assert(html.contains("window.SibgenSnippets && window.SibgenSnippets.init();"),
            "expected the on-load init call to be present")
@@ -115,3 +115,37 @@ class RendererSuite extends munit.FunSuite:
     assert(html.contains("readSnippetSource"),     "expected source-resolution helper")
     assert(html.contains("snippet.cmView"),        "expected click handler to consult the CodeMirror view")
     assert(html.contains("state.doc.toString()"),  "expected the editor's text extraction call")
+
+  test("snippet script concatenates earlier snippets sharing the same data-snippet-id"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("buildSnippetCompileUnit"),
+           "expected the channel-aware compile-unit helper")
+    assert(html.contains("data-snippet-id"),
+           "expected the helper to consult the snippet id attribute")
+    assert(html.contains("default-global-snippet"),
+           "expected the JS-side default channel name to match the renderer's constant")
+    assert(html.contains(".snippet-scala[data-snippet-id="),
+           "expected the helper to query siblings by snippet id")
+
+  test("snippet script filters and rebases diagnostics into the current snippet's coordinates"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    assert(html.contains("startLine"),
+           "expected the start-line offset threaded through runCheck")
+    assert(html.contains("d.line - startLine + 1"),
+           "expected the per-diagnostic line rebase formula")
+
+  test("snippet script normalizes 0-indexed compiler positions to 1-indexed before filtering"):
+    val html = Renderer.renderPage(Markdown.parse("# Doc"), "Doc")
+    // dotty's SourcePosition.line/column are 0-indexed (per SourceFile.offsetToLine docs).
+    // We bump both to 1-indexed so the filter's `d.line >= startLine` (with startLine ≥ 1)
+    // doesn't silently swallow errors on the snippet's first line.
+    assert(html.contains("dn.line   = dn.line   + 1"),
+           "expected the compiler-line normalization step")
+    assert(html.contains("dn.column = dn.column + 1"),
+           "expected the compiler-column normalization step")
+
+  test("renderPage emits data-snippet-id from the directive on the wrapper div"):
+    val src  = "# Doc\n\n<!--% snippetId tut -->\n```scala\nval x = 1\n```\n"
+    val html = Renderer.renderPage(Markdown.parse(src), "Doc")
+    assert(html.contains("data-snippet-id=\"tut\""),
+           "expected the directive's id to land on the snippet wrapper")

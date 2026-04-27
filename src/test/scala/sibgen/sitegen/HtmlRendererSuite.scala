@@ -58,7 +58,8 @@ class HtmlRendererSuite extends munit.FunSuite:
 
   test("scala snippet is wrapped in a snippet shell with a metadata strip"):
     val out = html("```scala\nval x = 1\n```\n")
-    assert(out.contains("<div class=\"snippet snippet-scala\">"), out)
+    assert(out.contains("class=\"snippet snippet-scala\""), out)
+    assert(out.contains("data-snippet-id=\"default-global-snippet\""), out)
     assert(out.contains("<div class=\"snippet-strip\">"), out)
     assert(out.contains("class=\"snippet-status\""), out)
     assert(out.contains("class=\"snippet-check\""), out)
@@ -167,3 +168,56 @@ class HtmlRendererSuite extends munit.FunSuite:
     )
     assert(out.contains("<a href=\"http://example.com\">link</a>"))
     assert(!out.contains("[label]:"))
+
+  test("scala snippet without a directive carries the default snippet id"):
+    val out = html("```scala\nval x = 1\n```\n")
+    assert(out.contains("data-snippet-id=\"default-global-snippet\""), out)
+
+  test("snippetId directive attaches data-snippet-id to the next scala block and is not emitted"):
+    val out = html("<!--% snippetId my-channel -->\n```scala\nval x = 1\n```\n")
+    assert(out.contains("data-snippet-id=\"my-channel\""), out)
+    assert(!out.contains("snippetId"), s"directive comment should not be in output: $out")
+    assert(!out.contains("<!--%"),     s"directive comment should not be in output: $out")
+
+  test("snippetId directive escapes special characters in the attribute"):
+    val out = html("<!--% snippetId a&b<c -->\n```scala\nval x = 1\n```\n")
+    assert(out.contains("data-snippet-id=\"a&amp;b&lt;c\""), out)
+
+  test("non-directive HTML comment passes through and the snippet keeps the default id"):
+    val out = html("<!-- ordinary comment -->\n```scala\nval x = 1\n```\n")
+    assert(out.contains("<!-- ordinary comment -->"), out)
+    assert(out.contains("data-snippet-id=\"default-global-snippet\""), out)
+
+  test("intervening paragraph between directive and scala block clears the pending id"):
+    val out = html(
+      """<!--% snippetId my-channel -->
+        |
+        |Some prose between.
+        |
+        |```scala
+        |val x = 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-snippet-id=\"default-global-snippet\""), out)
+    assert(!out.contains("data-snippet-id=\"my-channel\""), out)
+
+  test("directive only applies to the next block, not subsequent ones"):
+    val out = html(
+      """<!--% snippetId tut -->
+        |```scala
+        |def foo: Int = 1
+        |```
+        |
+        |```scala
+        |val y = foo + 1
+        |```
+        |""".stripMargin
+    )
+    assert(out.contains("data-snippet-id=\"tut\""), out)
+    assert(out.contains("data-snippet-id=\"default-global-snippet\""), out)
+
+  test("directive before a non-scala fenced block is not surfaced anywhere"):
+    val out = html("<!--% snippetId nope -->\n```bash\necho hi\n```\n")
+    assert(!out.contains("data-snippet-id"), out)
+    assert(!out.contains("snippetId"),       out)
